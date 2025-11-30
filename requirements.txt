@@ -1,0 +1,9 @@
+# Pinned for Python 3.11.4 compatibility on macOS
+streamlit==1.38.0
+yfinance==0.2.44
+pandas==2.2.2
+numpy==1.26.4
+matplotlib==3.9.2
+plotly==5.24.1
+scikit-learn==1.5.1
+hmmlearn==0.3.2
