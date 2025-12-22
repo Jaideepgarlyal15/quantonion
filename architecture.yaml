@@ -1,0 +1,21 @@
+
+Key differences:
+
+- Every label is in quotes: `S["Streamlit app: UI and backend"]`
+- No `<br/>` tags
+- No raw parentheses without quotes
+- `subgraph` lines use: `subgraph ID ["Label text"]`
+
+---
+
+## 2. Preview again
+
+With `architecture.md` open:
+
+- Press `Cmd + Shift + V` to open the Markdown preview  
+  or  
+- Right-click → **Open Preview to the Side**
+
+You should now see the architecture diagram rendered instead of the parse error. From there you can zoom and take a screenshot for your Day 1 post.
+
+If it still breaks, send me the exact content of `architecture.md` (copy-paste) and I will adjust it to the strictest possible syntax so that your extension is happy.
