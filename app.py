@@ -69,7 +69,7 @@ header, footer {visibility: hidden;}
     unsafe_allow_html=True,
 )
 
-st.title("📊 Regime Switching Risk Dashboard")
+st.title(" Regime Switching Risk Dashboard")
 st.caption(
     "Open-source HMM and ML forecasting for market regime detection. "
     "Educational use only - not investment advice."
