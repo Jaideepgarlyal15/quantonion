@@ -1,3 +1,16 @@
+"""
+Regime-Switching Risk Dashboard
+
+An open-source market regime detector using Hidden Markov Models and ML forecasting.
+Educational and research purposes only - not investment advice.
+
+Features:
+- Gaussian HMM for market regime detection (Stormy, Choppy, Calm, Super Calm)
+- ML ensemble predictions for 3-day, 14-day, and 3-month price forecasts
+- Portfolio risk analytics (VaR, ES)
+- Interactive visualizations with Plotly
+"""
+
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -20,6 +33,7 @@ from core.hmm_model import (
 from core.ml import (
     train_all_ml_models,
     add_ml_prediction_column,
+    get_all_forecasts,
 )
 from core.plotting import (
     plot_regime_timeline,
@@ -27,6 +41,7 @@ from core.plotting import (
     plot_confidence_series,
     make_regime_scatter,
     make_posterior_probs,
+    plot_forecast_comparison,
 )
 from core.portfolio import (
     portfolio_return_series,
@@ -37,7 +52,11 @@ from core.portfolio import (
 # --------------------------------------------------
 # Page config and basic styling
 # --------------------------------------------------
-st.set_page_config(page_title="Regime Switching Risk Dashboard", layout="wide")
+st.set_page_config(
+    page_title="Regime Switching Dashboard", 
+    layout="wide",
+    page_icon="📊"
+)
 
 st.markdown(
     """
@@ -50,9 +69,10 @@ header, footer {visibility: hidden;}
     unsafe_allow_html=True,
 )
 
-st.title("Regime Switching Risk Dashboard")
+st.title("📊 Regime Switching Risk Dashboard")
 st.caption(
-    "Hidden Markov Model and machine learning forecasts for market regimes. Educational use only."
+    "Open-source HMM and ML forecasting for market regime detection. "
+    "Educational use only - not investment advice."
 )
 
 # --------------------------------------------------
@@ -61,7 +81,7 @@ st.caption(
 with st.sidebar:
     st.header("Options")
     raw_symbol = st.text_input(
-        "Ticker (for example ^GSPC, AAPL, ASX:BHP, ^AXJO)", value="^GSPC"
+        "Ticker (e.g., ^GSPC, AAPL, ASX:BHP, ^AXJO)", value="^GSPC"
     )
     start = st.date_input("Start Date", value=pd.to_datetime("2015-01-01"))
     end = st.date_input("End Date", value=pd.Timestamp.today().normalize())
@@ -76,19 +96,16 @@ with st.sidebar:
         "Regime labelling metric", ["mean_return", "sharpe_ratio"], index=0
     )
 
-    # Important: turn auto_refit *off* by default to avoid heavy first load
-    auto_refit = st.checkbox("Auto refit on any input change", value=False)
+    auto_refit = st.checkbox("Auto refit on input change", value=False)
     fit_button = st.button("Run / refresh analysis")
 
     st.markdown("---")
     use_synth = st.checkbox("Allow synthetic fallback (demo)", value=False)
 
     st.markdown("---")
-    st.subheader("Pro ML forecasting")
-    enable_pro_ml = st.checkbox(
-        "Enable Pro ML engine (XGBoost, LightGBM, LSTM)", value=False
-    )
-    train_ml_button = st.button("Train or update ML models")
+    st.subheader("ML Forecasting")
+    enable_ml = st.checkbox("Enable ML price predictions", value=True)
+    train_ml_button = st.button("Train / update ML models")
 
     st.markdown("---")
     st.subheader("Data override (optional)")
@@ -98,6 +115,33 @@ with st.sidebar:
 
     st.subheader("Portfolio file (optional)")
     port_file = st.file_uploader("Upload CSV (Ticker,Weight)", type=["csv"])
+
+    st.markdown("---")
+    st.markdown("""
+    **About this dashboard:**
+    
+    - Uses Hidden Markov Models to detect market regimes
+    - ML ensemble (Linear + Random Forest) for price forecasting
+    - Forecasts: 3-day, 14-day, 3-month horizons
+    
+    Open source on GitHub.
+    
+    **📊 Popular Tickers to Try:**
+    
+    | Market | Tickers |
+    |--------|---------|
+    | **US Indices** | `^GSPC` (S&P 500), `^NDX` (Nasdaq), `^DJI` (Dow) |
+    | **US Stocks** | `AAPL`, `MSFT`, `GOOGL`, `AMZN`, `NVDA`, `TSLA`, `META` |
+    | **ETFs** | `SPY`, `QQQ`, `IWM`, `DIA`, `VTI` |
+    | **Crypto** | `BTC-USD`, `ETH-USD`, `SOL-USD` |
+    | **UK** | `^FTSE`, `BP.L`, `SHEL.L` |
+    | **Europe** | `^GDAXI`, `^FCHI` |
+    | **Australia** | `BHP.AX`, `CBA.AX`, `CSL.AX`, `IOZ.AX`, `^AXJO` |
+    | **Japan** | `^N225`, `7203.T` |
+    | **India** | `^NSEI`, `RELIANCE.NS` |
+    
+    *Enter any ticker above in the sidebar to analyze its regime patterns and get price forecasts.*
+    """)
 
 # --------------------------------------------------
 # Symbol normalisation
@@ -114,7 +158,7 @@ if fit_button:
     st.session_state["analysis_requested"] = True
 
 if not st.session_state["analysis_requested"]:
-    st.info("Set your options in the sidebar and click **“Run / refresh analysis”**.")
+    st.info("Set your options in the sidebar and click **Run / refresh analysis**.")
     st.stop()
 
 # --------------------------------------------------
@@ -141,7 +185,6 @@ if custom_price_file is not None:
         ]
         df_prices, data_src = up, "upload"
     except Exception as e:
-
         st.error("Failed to parse custom price CSV: " + str(e))
         st.stop()
 else:
@@ -154,8 +197,7 @@ if df_prices.empty:
     )
     st.stop()
 
-
-st.success("Data source: " + str(data_src))
+st.success(f"Data source: {data_src} | {len(df_prices)} trading days")
 
 # --------------------------------------------------
 # Features and HMM model fit
@@ -188,7 +230,7 @@ def need_refit() -> bool:
 
 
 if auto_refit or fit_button or need_refit():
-    with st.spinner("Fitting HMM model"):
+    with st.spinner("Fitting HMM model..."):
         hmm, scaler, states, post = fit_hmm(features, n_states_input, random_state)
     K = int(post.shape[1])
     st.session_state["model_state"] = dict(
@@ -212,7 +254,6 @@ labels_adv, labels_simple = label_states(features, states, label_metric)
 decoded = pd.DataFrame(index=features.index)
 decoded["state"] = pd.Series(states, index=features.index)
 for k in range(K):
-
     decoded["p_state_" + str(k)] = pd.Series(post[:, k], index=features.index)
 
 df = df_prices.join(decoded, how="left")
@@ -235,23 +276,32 @@ df["RegimeSimple"] = df["state"].map(labels_simple)
 state_clean = df["state"].copy().ffill().dropna().astype(int)
 
 # --------------------------------------------------
-# ML prediction column (optional, Pro mode)
+# ML predictions
 # --------------------------------------------------
 ml_models: Optional[Dict[str, Any]] = None
-if enable_pro_ml and train_ml_button:
-    with st.spinner("Training Pro ML models"):
-        ml_models = train_all_ml_models(df_prices, features, lookback=20)
-    st.session_state["ml_models"] = ml_models
-elif enable_pro_ml and "ml_models" in st.session_state:
-    ml_models = st.session_state["ml_models"]
+if enable_ml:
+    if train_ml_button:
+        with st.spinner("Training ML models..."):
+            ml_models = train_all_ml_models(df_prices, features, lookback=20)
+        st.session_state["ml_models"] = ml_models
+    elif "ml_models" in st.session_state:
+        ml_models = st.session_state["ml_models"]
 
-if enable_pro_ml and ml_models:
-    with st.spinner("Computing ML based next day price path"):
+if enable_ml and ml_models:
+    with st.spinner("Computing ML predictions..."):
         df["PredictedPriceNextML"] = add_ml_prediction_column(
             df_prices, features, ml_models
         )
 else:
     df["PredictedPriceNextML"] = np.nan
+
+# --------------------------------------------------
+# Future price forecasts
+# --------------------------------------------------
+forecasts = {}
+if enable_ml and ml_models and not state_clean.empty:
+    with st.spinner("Computing future price forecasts..."):
+        forecasts = get_all_forecasts(df_prices, features, ml_models)
 
 # --------------------------------------------------
 # Simple view
@@ -270,14 +320,14 @@ else:
     days_in_regime = current_run_length(state_clean)
 
     if simple_view:
-        st.markdown("### Quick view")
+        st.markdown("### Quick View")
         c1, c2, c3 = st.columns(3)
-        c1.metric("Current regime", latest_label_simple)
+        c1.metric("Current Regime", latest_label_simple)
         c2.metric("Confidence", f"{latest_conf:.0%}")
         c3.metric(
-            "Days in current regime",
+            "Days in Regime",
             f"{days_in_regime}",
-            help=f"Typical duration about {typical_days:.1f} days",
+            help=f"Typical duration: ~{typical_days:.1f} days",
         )
 
         advanced_name = labels_adv.get(latest_state, list(labels_adv.values())[0])
@@ -294,9 +344,9 @@ else:
             "Returns and volatility are typical for this regime.",
         )
         st.info(
-            f"Typical behaviour for this regime: {blurb} "
-            f"Historically here, annualised return about {ann_r:.1%}, "
-            f"volatility about {ann_v:.1%}."
+            f"**Typical behavior:** {blurb}\n\n"
+            f"Historical annual return: **{ann_r:.1%}** | "
+            f"Volatility: **{ann_v:.1%}**"
         )
 
         # Regime timeline
@@ -305,8 +355,8 @@ else:
         tl = plot_regime_timeline(idx_clean, state_clean.to_list(), labels_simple)
         st.plotly_chart(tl, use_container_width=True)
 
-        # Price with shading and optional ML prediction
-        pfig = plot_price_with_regimes(df, segs, enable_pro_ml)
+        # Price with regime shading and future forecasts
+        pfig = plot_price_with_regimes(df, segs, enable_ml, forecasts)
         st.plotly_chart(pfig, use_container_width=True)
 
         # Confidence
@@ -314,10 +364,59 @@ else:
         st.plotly_chart(conf_fig, use_container_width=True)
 
 # --------------------------------------------------
+# Future Price Forecasts Section
+# --------------------------------------------------
+if enable_ml and forecasts:
+    st.markdown("---")
+    st.markdown("### 🔮 ML Price Forecasts")
+    
+    col1, col2, col3 = st.columns(3)
+    
+    current_price = float(df_prices["Adj Close"].iloc[-1])
+    forecast_dates = {
+        3: col1,
+        14: col2,
+        90: col3
+    }
+    
+    for horizon, col in forecast_dates.items():
+        if horizon in forecasts:
+            f = forecasts[horizon]
+            pred_price = f["predicted_price"]
+            pred_return = f["predicted_return"]
+            conf_lower = f["confidence_lower"]
+            conf_upper = f["confidence_upper"]
+            conf_level = f["confidence_level"]
+            
+            with col:
+                st.markdown(f"**{horizon}-Day Forecast**")
+                st.metric(
+                    "Predicted Price",
+                    f"${pred_price:.2f}",
+                    delta=f"{pred_return:.2%}",
+                    help=f"Current: ${current_price:.2f}\n95% CI: ${conf_lower:.2f} - ${conf_upper:.2f}"
+                )
+                st.caption(f"Confidence: {conf_level:.0%}")
+        else:
+            with col:
+                st.markdown(f"**{horizon}-Day Forecast**")
+                st.info("Forecast unavailable")
+
+    # Forecast comparison chart
+    if forecasts:
+        fig_forecast = plot_forecast_comparison(current_price, forecasts)
+        st.plotly_chart(fig_forecast, use_container_width=True)
+        
+        st.caption(
+            "Forecasts use ensemble ML (Linear + Random Forest) with confidence intervals. "
+            "Longer horizons include mean reversion toward historical averages."
+        )
+
+# --------------------------------------------------
 # Advanced diagnostics and plots
 # --------------------------------------------------
 if not simple_view and not state_clean.empty:
-    st.subheader(f"{symbol} regime summary")
+    st.subheader(f"{symbol} Regime Summary")
     st.dataframe(
         stats.style.format(
             {
@@ -334,7 +433,6 @@ if not simple_view and not state_clean.empty:
 
     trans = pd.DataFrame(
         hmm.transmat_,
-
         index=[labels_adv.get(i, "State " + str(i)) for i in range(hmm.n_components)],
         columns=[labels_adv.get(i, "State " + str(i)) for i in range(hmm.n_components)],
     )
@@ -346,13 +444,13 @@ if not simple_view and not state_clean.empty:
 
     col1, col2 = st.columns([2, 1])
     with col1:
-        st.markdown("Transition matrix")
+        st.markdown("**Transition Matrix**")
         st.dataframe(
             trans.style.format("{:.3f}"),
             use_container_width=True,
         )
     with col2:
-        st.markdown("Expected duration per regime")
+        st.markdown("**Expected Duration**")
         st.dataframe(
             dur.to_frame().style.format("{:.1f}"),
             use_container_width=True,
@@ -380,15 +478,13 @@ if port_file is not None:
             port_df.columns = [c.strip().title() for c in port_df.columns]
             weights = dict(zip(port_df["Ticker"], port_df["Weight"]))
 
-            # Simple portfolio using current symbol only if matching
-            # (You can later extend this to fetch multiple tickers)
             price_dict = {symbol: df_prices}
             port_rets = portfolio_return_series(price_dict, {symbol: 1.0})
             var95, es95 = compute_var_es(port_rets, alpha=0.95)
 
-            st.subheader("Portfolio risk snapshot")
-            st.write(f"95% one-day VaR: {var95:.2%}")
-            st.write(f"95% one-day Expected Shortfall: {es95:.2%}")
+            st.subheader("Portfolio Risk Snapshot")
+            st.write(f"**95% one-day VaR:** {var95:.2%}")
+            st.write(f"**95% one-day Expected Shortfall:** {es95:.2%}")
 
     except Exception as e:
         st.warning(f"Failed to parse portfolio file: {e}")
@@ -399,14 +495,13 @@ if port_file is not None:
 if not state_clean.empty and not stats.empty:
     latest_state_for_signal = int(state_clean.iloc[-1])
     latest_regime_adv = labels_adv.get(
-
         latest_state_for_signal, "State " + str(latest_state_for_signal)
     )
     ann_means = stats["ann_mean_ret"].sort_values(ascending=False)
     best_regime = ann_means.index[0]
     st.markdown(
-        f"Latest regime (advanced): `{latest_regime_adv}`  |  "
-        f"Historically best regime by annual return: `{best_regime}`"
+        f"**Latest regime:** `{latest_regime_adv}`  |  "
+        f"**Best historical regime:** `{best_regime}`"
     )
 
 out = df[
@@ -416,13 +511,16 @@ out["Return"] = np.log(out["Adj Close"]).diff()
 out = out.dropna()
 
 st.download_button(
-    "Download labelled time series (CSV)",
+    "📥 Download Labelled Time Series (CSV)",
     data=out.to_csv().encode("utf-8"),
     file_name=f"{symbol.replace('^', '')}_labelled_timeseries.csv",
     mime="text/csv",
 )
 
-st.info(
-    "Data providers are tried in order with automatic fallbacks in `core.data_loader`. "
-    "Pro ML engine trains only when you press the **Train or update ML models** button."
+st.markdown("---")
+st.caption(
+    "Data providers: Yahoo Finance (primary), Twelve Data, Alpha Vantage. "
+    "ML engine: Ensemble of Linear Regression and Random Forest. "
+    "Open source - contributions welcome!"
 )
+

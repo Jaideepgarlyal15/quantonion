@@ -1,14 +1,12 @@
-streamlit==1.39.0
-pandas==2.2.2
-numpy==1.26.4
-plotly==5.22.0
-requests==2.31.0
-yfinance==0.2.40
-hmmlearn==0.3.2
-scikit-learn==1.5.1
-pandas-datareader==0.10.0
-python-dateutil==2.9.0.post0
-xgboost
-lightgbm
-tensorflow
-reportlab
+# Regime Switching Dashboard - Dependencies
+# Open-source regime detection and ML forecasting
+
+streamlit>=1.39.0
+pandas>=2.2.2
+numpy>=1.26.4
+plotly>=5.22.0
+requests>=2.31.0
+yfinance>=0.2.40
+hmmlearn>=0.3.2
+scikit-learn>=1.5.1
+
