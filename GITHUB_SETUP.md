@@ -1,137 +1,146 @@
-# GitHub Setup & VSCode Connection Guide
+# GitHub Setup and Deployment Guide
 
-## Step 1: Initialize Git & Push to GitHub
+This guide covers how to set up Git version control, connect to GitHub, and deploy the application to Streamlit Cloud.
 
-Run these commands in your terminal:
+---
+
+## Initial Git Setup
+
+If you have not already initialised Git in your repository, run the following commands:
 
 ```bash
-# Navigate to your project folder
-cd /Users/jaideepgarlyal/Desktop/regime-switching-dashboard
-
-# Initialize git (if not already done)
+# Initialise git repository
 git init
 
-# Add all files
+# Add all files to staging
 git add .
 
-# Commit with a message
-git commit -m "Update: Multi-timeframe ML forecasts, remove premium references"
+# Commit with initial message
+git commit -m "Initial commit"
 
-# Add your GitHub repository
-git remote add origin https://github.com/Jaideepgarlyal15/Regime-Switching-Risk-Dashboard-Streamlit-HMM-.git
+# Add remote repository (replace with your actual repository URL)
+git remote add origin https://github.com/yourusername/Regime-Switching-Risk-Dashboard-Streamlit-HMM-.git
 
 # Push to GitHub
 git push -u origin main
 ```
 
-**If you get an error about branches:**
-```bash
-# Check current branch name
-git branch
+If your default branch is named "master" instead of "main", rename it first:
 
-# If it's "master" instead of "main":
+```bash
 git branch -M main
 git push -u origin main
 ```
 
 ---
 
-## Step 2: Connect GitHub to VSCode (Already Connected!)
+## GitHub Authentication
 
-Your VSCode is already connected to GitHub. Here's how to sync:
+### Option A: Personal Access Token (Recommended)
 
-### Push Updates (Send changes to GitHub)
+1. Go to GitHub Settings > Developer settings > Personal access tokens > Tokens (classic)
+2. Generate a new token with the "repo" scope
+3. Copy the generated token
+4. When pushing to GitHub, use the token as your password
+
+### Option B: GitHub CLI
+
 ```bash
+# Install GitHub CLI
+brew install gh
+
+# Authenticate with GitHub
+gh auth login
+
+# Set default repository
+gh repo set-default
+```
+
+---
+
+## Regular Git Operations
+
+### Push Changes to GitHub
+
+```bash
+# Stage all changes
 git add .
-git commit -m "Your message here"
+
+# Commit with a message
+git commit -m "Description of changes"
+
+# Push to GitHub
 git push
 ```
 
-### Pull Updates (Get latest from GitHub)
+### Pull Latest Changes
+
 ```bash
 git pull
 ```
 
-### Check Status
+### Check Repository Status
+
 ```bash
 git status
 ```
 
 ---
 
-## Step 3: Set Up GitHub Authentication
+## Visual Studio Code Integration
 
-### Option A: GitHub Token (Recommended)
-1. Go to GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic)
-2. Generate new token → Select "repo" scope
-3. Copy the token
-4. When pushing, use token as password:
-   - Username: your GitHub username
-   - Password: paste the token
+Visual Studio Code has built-in Git support:
 
-### Option B: GitHub CLI
-```bash
-# Install GitHub CLI
-brew install gh
-
-# Login
-gh auth login
-
-# Then push with:
-gh repo set-default
-```
+1. Open the Source Control tab (Ctrl+Shift+G on Linux/Windows, Cmd+Shift+G on Mac)
+2. Review changed files
+3. Stage changes by clicking the plus icon
+4. Enter a commit message and press Ctrl+Enter (Cmd+Enter on Mac)
+5. Sync changes by clicking the sync icon
 
 ---
 
-## Step 4: VSCode Git Integration
+## Deploying to Streamlit Cloud
 
-VSCode has built-in Git support:
-
-1. **Source Control tab** (Ctrl+Shift+G) shows changes
-2. **Stage changes** by clicking +
-3. **Commit** by typing message and pressing Ctrl+Enter
-4. **Sync/Push** by clicking the sync icon
-
----
-
-## Step 5: Deploy to Streamlit Cloud
-
-1. Push your code to GitHub
-2. Go to [share.streamlit.io](https://share.streamlit.io)
-3. Sign in with GitHub
+1. Push your code to a public GitHub repository
+2. Navigate to [share.streamlit.io](https://share.streamlit.io)
+3. Sign in with your GitHub account
 4. Click "New app"
-5. Select your repository
-6. Deploy!
+5. Select your repository from the list
+6. Choose the branch and specify the main file path (app.py)
+7. Click "Deploy"
 
-Your app URL will be: `https://yourusername-regime-switching-risk-dashboard.streamlit.app`
+Your application will be available at:
+`https://yourusername-regime-switching-risk-dashboard.streamlit.app`
 
 ---
 
-## Useful Git Commands
+## Common Git Commands Reference
 
 | Command | Description |
 |---------|-------------|
-| `git status` | See changed files |
-| `git add filename` | Stage specific file |
-| `git add .` | Stage all files |
-| `git commit -m "msg"` | Commit changes |
-| `git push` | Push to GitHub |
-| `git pull` | Pull from GitHub |
-| `git log` | See commit history |
-| `git diff` | See file differences |
+| `git status` | Show modified and staged files |
+| `git add filename` | Stage a specific file |
+| `git add .` | Stage all modified files |
+| `git commit -m "message"` | Commit staged changes |
+| `git push` | Push committed changes to remote |
+| `git pull` | Fetch and merge remote changes |
+| `git log` | Show commit history |
+| `git diff` | Show unstaged changes |
 
 ---
 
-## If You Need to Create a New Repository
+## Creating a New Repository
+
+If you need to create a fresh repository:
+
+1. Create a new repository on GitHub.com (without initialising with README)
+2. Clone the empty repository to your local machine
+3. Copy the project files into the cloned directory
+4. Commit and push:
 
 ```bash
-# Create repository on GitHub.com first
-# Then run:
-cd /Users/jaideepgarlyal/Desktop/regime-switching-dashboard
-git init
 git add .
 git commit -m "Initial commit"
-git remote add origin https://github.com/YOUR_USERNAME/YOUR_REPO.git
 git push -u origin main
 ```
 

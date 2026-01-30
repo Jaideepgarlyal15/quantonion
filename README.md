@@ -1,75 +1,57 @@
 # Regime-Switching Risk Dashboard
 
-An open-source web application that detects market regimes and forecasts prices using Hidden Markov Models and Machine Learning.
+An open-source web application that detects market regimes and forecasts prices using Hidden Markov Models and Machine Learning techniques.
 
 ---
 
-## What This Dashboard Does
+## Live Demo
 
-### 1. Market Regime Detection
-- Uses **Gaussian Hidden Markov Models (HMM)** to identify market states
-- Classifies regimes as: **Stormy**, **Choppy**, **Calm**, or **Super Calm**
+- **Streamlit Cloud**: [https://yourusername-regime-switching-risk-dashboard.streamlit.app](https://share.streamlit.io)
+- **Hugging Face**: [https://huggingface.co/spaces/yourusername/regime-switching-risk-dashboard](https://huggingface.co/spaces)
+
+---
+
+## What This Project Does
+
+- Detects market regimes using Gaussian Hidden Markov Models
+- Classifies market states as Stormy, Choppy, Calm, or Super Calm
 - Shows regime confidence levels and transition probabilities
-- Displays expected duration of current regime
+- Displays expected duration of the current regime
+- Provides price forecasts for multiple time horizons
+- Calculates Value-at-Risk and Expected Shortfall for portfolio analytics
+- Exports labelled time series data to CSV format
 
-### 2. Price Forecasting
-- Uses **ML Ensemble** (Linear Regression + Random Forest)
-- Predicts prices for 3 time horizons:
-  - **3-Day** forecast
-  - **14-Day** forecast
-  - **3-Month** forecast
-- Each forecast includes 95% confidence intervals
+---
 
-### 3. Interactive Visualizations
-- Price chart with regime-colored background shading
-- Future forecast markers on the price chart
+## Key Features
+
+- Interactive price charts with regime-coloured background shading
+- Future forecast markers with 95% confidence intervals
 - Regime timeline showing historical regime changes
-- Posterior probability charts for each regime
-- Confidence series over time
-
-### 4. Portfolio Analytics
-- Value-at-Risk (VaR) calculation
-- Expected Shortfall (ES)
-- Export labelled time series to CSV
+- Posterior probability charts for each regime state
+- Support for global markets including US, UK, Europe, Australia, Japan, India, and Crypto
+- Real-time data retrieval from Yahoo Finance
 
 ---
 
-## Supported Markets
+## Tech Stack
 
-| Market | Examples |
-|--------|----------|
-| US Indices | `^GSPC` (S&P 500), `^NDX` (Nasdaq), `^DJI` (Dow) |
-| US Stocks | `AAPL`, `MSFT`, `GOOGL`, `AMZN`, `NVDA`, `TSLA`, `META` |
-| ETFs | `SPY`, `QQQ`, `IWM`, `DIA`, `VTI` |
-| Crypto | `BTC-USD`, `ETH-USD`, `SOL-USD` |
-| UK | `^FTSE`, `BP.L`, `SHEL.L` |
-| Europe | `^GDAXI`, `^FCHI` |
-| Australia | `BHP.AX`, `CBA.AX`, `IOZ.AX`, `^AXJO` |
-| Japan | `^N225`, `7203.T` |
-| India | `RELIANCE.NS` |
+- **Frontend**: Streamlit
+- **Data Processing**: pandas, numpy
+- **Visualisation**: plotly
+- **Machine Learning**: hmmlearn, scikit-learn
+- **Data Source**: yfinance
+- **HTTP Requests**: requests
 
 ---
 
-## How It Works
-
-### Regime Detection (HMM)
-1. Calculate daily log returns and rolling volatility
-2. Fit Gaussian HMM with 2-4 regime states
-3. Label states by mean return (Stormy → Calm)
-4. Plot regime periods on price chart
-
-### Price Forecasting (ML)
-1. Create supervised dataset with rolling feature windows
-2. Train Linear Regression + Random Forest ensemble
-3. Predict next-day returns iteratively for each horizon
-4. Apply mean-reversion for longer horizons (14-day, 3-month)
-5. Show predictions with confidence intervals
-
----
-
-## Quick Start
+## Running Locally
 
 ```bash
+# Clone the repository
+git clone https://github.com/Jaideepgarlyal15/Regime-Switching-Risk-Dashboard-Streamlit-HMM-.git
+cd Regime-Switching-Risk-Dashboard-Streamlit-HMM-
+
 # Create virtual environment
 python3 -m venv .venv
 source .venv/bin/activate
@@ -77,40 +59,49 @@ source .venv/bin/activate
 # Install dependencies
 pip install -r requirements.txt
 
-# Run the app
+# Run the application
 streamlit run app.py
 ```
 
 ---
 
-## Dependencies
+## Project Structure
 
-- streamlit
-- pandas
-- numpy
-- plotly
-- yfinance
-- hmmlearn
-- scikit-learn
-- requests
+```
+regime-switching-dashboard/
+├── app.py                    # Main Streamlit application
+├── requirements.txt          # Python dependencies
+├── LICENSE                   # MIT Licence
+├── README.md                 # This file
+├── GITHUB_SETUP.md           # GitHub setup and deployment guide
+├── core/
+│   ├── data_loader.py        # Data retrieval from Yahoo Finance
+│   ├── features.py           # Feature engineering for ML models
+│   ├── hmm_model.py          # Hidden Markov Model implementation
+│   ├── ml.py                 # ML ensemble for price forecasting
+│   ├── plotting.py           # Plotly visualisation functions
+│   └── portfolio.py          # Portfolio risk analytics
+└── .streamlit/
+    ├── config.toml           # Streamlit configuration
+    ├── secrets.toml          # Secrets management
+    └── architecture.md       # Architecture documentation
+```
+
+---
+
+## Licence
+
+This project is licensed under the MIT Licence. See the LICENSE file for details.
 
 ---
 
 ## Disclaimer
 
-This software is for **educational and research purposes only**. It is not financial advice. Past performance does not guarantee future results.
+This software is provided for educational and research purposes only. It does not constitute financial advice. Past performance does not guarantee future results. Use this software at your own risk.
 
 ---
 
-## GitHub
+## Contributing
 
-[Regime-Switching-Risk-Dashboard](https://github.com/Jaideepgarlyal15/Regime-Switching-Risk-Dashboard-Streamlit-HMM-)
-
-Contributions and feedback welcome!
-
----
-
-## License
-
-MIT License
+Contributions are welcome. Please open issues for bug reports or feature requests, or submit pull requests for improvements.
 
