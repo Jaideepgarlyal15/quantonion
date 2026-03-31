@@ -59,26 +59,34 @@ def _load_system_prompt() -> str:
         )
 
 
-# ── Agent ─────────────────────────────────────────────────────────────────────
-agent = Agent(
-    name="quantonion_research_agent",
-    model="co/gemini-2.5-pro",
-    plugins=[re_act],
-    tools=[
-        list_available_strategies,
-        detect_current_regime,
-        run_backtest_analysis,
-        compare_all_strategies,
-        get_risk_metrics,
-        get_news_sentiment,
-        get_social_buzz,
-        get_fear_and_greed_index,
-        get_research_brief,
-    ],
-    system_prompt=_load_system_prompt(),
-    max_iterations=10,
-)
+# ── Agent factory (host() requires a callable, not an instance) ───────────────
+_TOOLS = [
+    list_available_strategies,
+    detect_current_regime,
+    run_backtest_analysis,
+    compare_all_strategies,
+    get_risk_metrics,
+    get_news_sentiment,
+    get_social_buzz,
+    get_fear_and_greed_index,
+    get_research_brief,
+]
+
+
+def create_agent() -> Agent:
+    return Agent(
+        name="quantonion_research_agent",
+        model="co/gemini-2.5-pro",
+        plugins=[re_act],
+        tools=_TOOLS,
+        system_prompt=_load_system_prompt(),
+        max_iterations=10,
+    )
+
+
+# Module-level instance (used by tests / imports)
+agent = create_agent()
 
 # ── Local run (python agent.py) or co deploy ─────────────────────────────────
 if __name__ == "__main__":
-    host(agent)
+    host(create_agent)
