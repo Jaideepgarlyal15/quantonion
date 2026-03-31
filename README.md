@@ -78,9 +78,30 @@ The `re_act` plugin enables multi-step reasoning:
 1. Retrieves strategy metrics via tool calls
 2. Retrieves regime statistics and current state
 3. Compares strategies vs Buy & Hold benchmark
-4. Composes a plain-English analysis with appropriate caveats
+4. Fetches news sentiment, social buzz, and fear & greed data
+5. Synthesises everything into a structured research brief
+6. Composes a plain-English analysis with appropriate caveats
 
 Graceful fallback to deterministic summaries when API key is absent.
+
+### Sentiment Analysis
+| Tool | Source | Auth |
+|------|--------|------|
+| `get_news_sentiment(ticker)` | Alpha Vantage NEWS_SENTIMENT + Yahoo Finance headlines | Optional AV key |
+| `get_social_buzz(ticker)` | StockTwits public stream + Reddit (WSB, stocks, investing) | None |
+| `get_fear_and_greed_index()` | VIX via yfinance + alternative.me crypto F&G | None |
+| `get_research_brief(ticker)` | All of the above + quant analysis synthesised | Optional AV key |
+
+The `get_research_brief` tool produces a multi-section report covering:
+- HMM regime context
+- Strategy performance summary
+- News and social sentiment
+- Fear & greed gauges
+- A signal scorecard (bull / bear / neutral evidence)
+- A decision framework checklist
+- Full disclaimers
+
+It is designed to equip users to make their own decisions — not to recommend positions.
 
 ### Data Sources
 | Source | Free? | Key Required |
@@ -88,6 +109,11 @@ Graceful fallback to deterministic summaries when API key is absent.
 | Yahoo Finance | ✅ Yes | No |
 | Alpha Vantage | ✅ Free tier | Optional |
 | Twelve Data | ✅ Free tier | Optional |
+| StockTwits | ✅ Yes | No |
+| Reddit (WSB/stocks/investing) | ✅ Yes | No |
+| alternative.me Fear & Greed | ✅ Yes | No |
+| VIX (^VIX via yfinance) | ✅ Yes | No |
+| Finnhub | ✅ Free tier | Optional |
 
 ---
 
@@ -276,8 +302,9 @@ See [`.env.example`](.env.example) for a full list. None are required for basic 
 | Variable | Required | Description |
 |----------|----------|-------------|
 | ConnectOnion CLI auth | No | Run `co auth` once to enable full AI agent analysis |
-| `ALPHAVANTAGE_API_KEY` | No | Alpha Vantage data fallback |
-| `TWELVE_DATA_API_KEY` | No | Twelve Data fallback |
+| `ALPHAVANTAGE_API_KEY` | No | Alpha Vantage data + NEWS_SENTIMENT for `get_news_sentiment()` |
+| `TWELVE_DATA_API_KEY` | No | Twelve Data price data fallback |
+| `FINNHUB_API_KEY` | No | Finnhub news (optional supplement to AV + Yahoo Finance) |
 
 ---
 

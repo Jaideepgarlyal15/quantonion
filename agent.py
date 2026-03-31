@@ -36,6 +36,12 @@ from agents.live_tools import (
     compare_all_strategies,
     get_risk_metrics,
 )
+from agents.sentiment_tools import (
+    get_news_sentiment,
+    get_social_buzz,
+    get_fear_and_greed_index,
+    get_research_brief,
+)
 
 # ── System prompt ─────────────────────────────────────────────────────────────
 _PROMPT_PATH = Path(__file__).parent / "prompts" / "agent_system.txt"
@@ -64,6 +70,10 @@ agent = Agent(
         run_backtest_analysis,
         compare_all_strategies,
         get_risk_metrics,
+        get_news_sentiment,
+        get_social_buzz,
+        get_fear_and_greed_index,
+        get_research_brief,
     ],
     system_prompt=_load_system_prompt(),
     max_iterations=10,
