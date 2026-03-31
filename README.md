@@ -33,7 +33,8 @@ No paid subscriptions required. Free market data via Yahoo Finance. Deploy to Re
 |---|---|---|
 | ![Backtest](assets/screenshot_backtest.png) | ![Regimes](assets/screenshot_regimes.png) | ![Agent](assets/screenshot_agent.png) |
 
-*(Add your own screenshots after first run)*
+> Run `streamlit run app.py` locally, interact with each tab, then save screenshots as
+> `assets/screenshot_backtest.png`, `assets/screenshot_regimes.png`, `assets/screenshot_agent.png`.
 
 ---
 
@@ -95,7 +96,7 @@ Graceful fallback to deterministic summaries when API key is absent.
 ### 1. Clone and install
 
 ```bash
-git clone https://github.com/yourusername/quantonion.git
+git clone https://github.com/YOUR_GITHUB_USERNAME/quantonion.git
 cd quantonion
 
 python3 -m venv .venv
@@ -113,11 +114,23 @@ cp .env.example .env
 
 ### 3. Run
 
+**Option A — Streamlit dashboard (full interactive UI)**
 ```bash
 streamlit run app.py
 ```
-
 Open [http://localhost:8501](http://localhost:8501), select a ticker, choose strategies, and click **🚀 Run Analysis**.
+
+**Option B — Standalone ConnectOnion agent (chat interface)**
+```bash
+co auth            # authenticate once — enables AI model
+python agent.py    # launches built-in chat UI in your browser
+```
+Ask in plain English: *"What regime is AAPL in?"*, *"Compare all strategies on BTC-USD since 2020"*, *"Run a Regime Filter backtest on ^GSPC"*.
+
+**Option C — Deploy to ConnectOnion Cloud**
+```bash
+co deploy          # deploys agent.py and gives you a public URL
+```
 
 ---
 
@@ -126,6 +139,7 @@ Open [http://localhost:8501](http://localhost:8501), select a ticker, choose str
 ```
 quantonion/
 ├── app.py                    # Streamlit portal (Backtest | Regimes | Agent | About)
+├── agent.py                  # Standalone ConnectOnion agent (co deploy / python agent.py)
 ├── requirements.txt
 ├── pyproject.toml
 ├── render.yaml               # Render.com deployment
@@ -149,10 +163,12 @@ quantonion/
 │   ├── bollinger.py          # Bollinger Band Reversion
 │   └── regime_filter.py      # HMM Regime Filter
 ├── agents/
-│   ├── research_agent.py     # ConnectOnion Agent + fallback
-│   └── tools.py              # Agent tool functions
+│   ├── research_agent.py     # ConnectOnion Agent for Streamlit tab + fallback
+│   ├── tools.py              # Streamlit agent tools (reads pre-loaded session data)
+│   └── live_tools.py         # Standalone agent tools (fetch + compute on demand)
 ├── prompts/
-│   └── system.txt            # Agent system prompt
+│   ├── system.txt            # System prompt for Streamlit agent tab
+│   └── agent_system.txt      # System prompt for standalone ConnectOnion agent
 └── tests/
     ├── test_features.py
     ├── test_strategies.py
@@ -230,7 +246,8 @@ pytest tests/ -v
    ALPHAVANTAGE_API_KEY = "..."
    TWELVE_DATA_API_KEY = "..."
    ```
-   For AI agent features on Streamlit Cloud, authenticate via ConnectOnion CLI locally first.
+   For full AI agent features, use the standalone agent (`python agent.py` or `co deploy`).
+   The Streamlit app's Agent tab shows a deterministic rule-based summary when ConnectOnion is unavailable.
 
 ### Render.com (free tier)
 
