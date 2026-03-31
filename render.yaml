@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: regime-switching-dashboard
+    name: quantonion
     env: python
     plan: free
     buildCommand: pip install -r requirements.txt
@@ -9,3 +9,6 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.4
+      # Add ALPHAVANTAGE_API_KEY, TWELVE_DATA_API_KEY as environment variables
+      # in the Render dashboard (not here in YAML).
+      # ConnectOnion AI features require `co auth` — not a key in env vars.

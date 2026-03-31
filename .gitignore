@@ -1,20 +1,32 @@
-# Python
+# ── Python ────────────────────────────────────────────────────────────────────
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
+*.py[cod]
 *.egg-info/
+dist/
+build/
 .ipynb_checkpoints/
 
-# Envs
+# ── Virtual environments ──────────────────────────────────────────────────────
 .venv/
 venv/
+env/
+
+# ── Environment and secrets ───────────────────────────────────────────────────
+# NEVER commit .env or secrets — use .env.example instead
 .env
 *.env
-
-# Streamlit secrets
 .streamlit/secrets.toml
 
-# OS / editor
+# ── ConnectOnion runtime files ────────────────────────────────────────────────
+.co/keys/
+.co/cache/
+.co/logs/
+.co/history/
+
+# ── OS / editor ───────────────────────────────────────────────────────────────
 .DS_Store
 .vscode/
+*.swp
+
+# ── Misc ──────────────────────────────────────────────────────────────────────
+todo.md

@@ -1,0 +1,63 @@
+name: provide_a_comprehensive_research_summary_use_your
+created: '2026-03-30 23:23:45'
+updated: '2026-03-30 23:23:45'
+runs: 1
+model: gemini-2.5-pro
+turns:
+- input: Provide a comprehensive research summary. Use your tools to retrieve strategy
+    metrics and regime context. Compare the strategies against Buy & Hold and highlight
+    the most interesting findings. Include appropriate caveats.
+  run: 1
+  output: "\nOf course. Here is a comprehensive research summary based on the backtest\
+    \ data.\n\n### **Executive Summary**\n\nThis analysis covers two strategies, \"\
+    SMA Crossover\" and \"Regime Filter,\" compared against a \"Buy & Hold\" benchmark\
+    \ for the S&P 500 (^GSPC).\n\nThe key finding is the performance trade-off demonstrated\
+    \ by the **Regime Filter** strategy. While it generated a lower Compound Annual\
+    \ Growth Rate (CAGR) than Buy & Hold (5.5% vs. 10.6%), it achieved this with a\
+    \ significantly higher Sharpe Ratio (0.67 vs. 0.56) and a dramatically lower maximum\
+    \ drawdown (-12.8% vs. -33.9%). This suggests the strategy was effective at managing\
+    \ risk, albeit at the cost of capturing the full upside of the market. The SMA\
+    \ Crossover strategy underperformed the benchmark on all key metrics.\n\n### **Strategy\
+    \ Performance Metrics**\n\nHere is a summary of the performance for each strategy\
+    \ during the backtest period.\n\n*   **Buy & Hold Benchmark**\n    *   CAGR: **10.6%**\n\
+    \    *   Sharpe Ratio: **0.56**\n    *   Max Drawdown: **-33.9%**\n\n*   **SMA\
+    \ Crossover**\n    *   CAGR: **5.9%**\n    *   Sharpe Ratio: **0.40**\n    * \
+    \  Max Drawdown: **-33.9%**\n    *   Trades: 5\n\n*   **Regime Filter**\n    *\
+    \   CAGR: **5.5%**\n    *   Sharpe Ratio: **0.67**\n    *   Max Drawdown: **-12.8%**\n\
+    \    *   Trades: 31\n\n### **Market Regime Context**\n\nThe analysis identified\
+    \ three distinct market regimes based on a Hidden Markov Model (HMM). Understanding\
+    \ these is crucial for interpreting strategy behaviour.\n\n*   **Current Detected\
+    \ Regime:** **Choppy**\n\n*   **Historical Regime Characteristics (In-Sample):**\n\
+    \    *   **Bull:** Characterised by high returns and low volatility (17.4% Ann.\
+    \ Return, 9.5% Ann. Vol). This regime was active for the majority of the backtest\
+    \ (1644 days).\n    *   **Neutral:** Essentially flat returns with elevated volatility\
+    \ (0.5% Ann. Return, 18.9% Ann. Vol).\n    *   **Crisis/Bear:** Negative returns\
+    \ with extremely high volatility (-0.7% Ann. Return, 43.6% Ann. Vol).\n\nThe **Regime\
+    \ Filter** strategy's high trade count (31) and superior risk metrics suggest\
+    \ it successfully adjusted its market exposure in response to these changing regimes,\
+    \ likely reducing risk during the Neutral and Crisis/Bear periods.\n\n### **Key\
+    \ Findings & Concluding Remarks**\n\n1.  **Superior Risk-Adjusted Performance:**\
+    \ The **Regime Filter** was the standout performer on a risk-adjusted basis. Its\
+    \ ability to reduce the maximum drawdown by over 21 percentage points compared\
+    \ to the benchmark is significant and demonstrates effective risk management.\
+    \ This often appeals to investors prioritising capital preservation.\n\n2.  **Underperformance\
+    \ of Simple Momentum:** The **SMA Crossover** strategy failed to add value. It\
+    \ halved the benchmark's return without offering any reduction in drawdown, indicating\
+    \ that this simple trend-following approach was not well-suited to the market\
+    \ conditions within this specific backtest period.\n\n3.  **The Price of Protection:**\
+    \ The Regime Filter's outperformance on risk metrics came at the direct cost of\
+    \ total return. By de-risking in volatile periods, it inevitably missed some of\
+    \ the sharp recoveries that often follow drawdowns, thus lagging the Buy & Hold\
+    \ strategy's CAGR.\n\n***\n\n*Disclaimer: This analysis is based on a historical,\
+    \ in-sample backtest. Past performance, particularly when optimised on historical\
+    \ data, is not a reliable indicator of future results. The identification of market\
+    \ regimes is also performed in-sample and may not generalise to live market conditions.\
+    \ This information does not constitute investment advice.*"
+  tools_called:
+  - get_strategy_summary()
+  - get_regime_context()
+  - compare_vs_benchmark()
+  expected: ''
+  evaluation: ''
+  meta: '{"tokens": 0, "cost": 0, "duration_ms": 30415, "ts": "2026-03-30 23:23:45"}'
+  history: []
