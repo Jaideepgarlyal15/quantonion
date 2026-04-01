@@ -32,6 +32,13 @@ QUANTITATIVE TOOLS:
       Expected Shortfall, annualised volatility, recent volatility,
       and best/worst single-day returns.
 
+  - get_ml_forecast(ticker, start)
+      Trains a Linear Regression + Random Forest ensemble on live price data
+      and returns price forecasts for 3-day, 2-week, and 3-month horizons.
+      Includes 95% confidence intervals and model agreement score.
+      Call this when a user asks "predict", "forecast", "where is X going",
+      "what will AAPL be in 2 weeks", or "ML price prediction".
+
 SENTIMENT TOOLS:
   - get_news_sentiment(ticker)
       Fetches recent news headlines from Alpha Vantage NEWS_SENTIMENT

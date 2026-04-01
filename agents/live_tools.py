@@ -553,3 +553,130 @@ def get_risk_metrics(
         "These metrics are for educational analysis only, not risk management.",
     ]
     return "\n".join(lines)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Tool 6: get_ml_forecast
+# ─────────────────────────────────────────────────────────────────────────────
+
+def get_ml_forecast(
+    ticker: str,
+    start: str = _DEFAULT_START,
+) -> str:
+    """
+    Train an ensemble ML model (Linear Regression + Random Forest) on live price data
+    and return price forecasts for 3-day, 14-day, and 3-month horizons.
+
+    Features used: log returns, rolling volatility, momentum, RSI.
+    Predictions are iterative extrapolations — uncertainty grows with horizon.
+
+    Args:
+        ticker: Asset ticker symbol (e.g. 'AAPL', '^GSPC', 'BTC-USD').
+        start: Start date for training data in YYYY-MM-DD format. Default '2018-01-01'.
+
+    Returns:
+        Formatted string with current price, predicted prices for each horizon,
+        95% confidence intervals, model agreement score, and appropriate caveats.
+    """
+    end = _today()
+    ticker = normalize_symbol(ticker.strip())
+
+    df, src = load_price_data(ticker, start, end, allow_synth=False)
+    if df.empty:
+        return (
+            f"Could not fetch data for '{ticker}'. "
+            "Check the ticker symbol."
+        )
+
+    if len(df) < 100:
+        return (
+            f"Insufficient data for '{ticker}' to train ML models "
+            f"(got {len(df)} days, need at least 100). "
+            "Try a longer start date."
+        )
+
+    features = build_features(df, vol_window=21)
+    if features.empty or len(features) < 60:
+        return (
+            f"Feature engineering failed for '{ticker}' "
+            f"(got {len(features)} feature rows, need 60+)."
+        )
+
+    try:
+        from core.ml import train_all_ml_models, get_all_forecasts
+        ml_models = train_all_ml_models(df, features, lookback=20)
+    except Exception as exc:
+        return f"ML model training failed for '{ticker}': {exc}"
+
+    if not ml_models:
+        return (
+            f"ML training returned no models for '{ticker}'. "
+            "Check that sufficient data is available."
+        )
+
+    try:
+        from core.ml import get_all_forecasts
+        forecasts = get_all_forecasts(df, features, ml_models)
+    except Exception as exc:
+        return f"ML forecasting failed for '{ticker}': {exc}"
+
+    current_price = float(df["Adj Close"].iloc[-1])
+    last_date = str(df.index[-1].date())
+    n_train = len(df)
+
+    linear_rmse = ml_models.get("linear_rmse", float("nan"))
+    rf_rmse = ml_models.get("rf_rmse", float("nan"))
+
+    lines = [
+        f"=== ML Price Forecast: {ticker} ===",
+        f"Data source   : {src}",
+        f"Training data : {start} to {end}  ({n_train} trading days)",
+        f"Current price : ${current_price:.2f}  (as of {last_date})",
+        f"Models        : Linear Regression + Random Forest (ensemble, 60/40 weighted RF-heavy)",
+        f"Features      : log returns, rolling volatility, momentum, RSI",
+        "",
+        f"In-sample RMSE (log-return scale):",
+        f"  Linear Regression : {linear_rmse:.6f}",
+        f"  Random Forest     : {rf_rmse:.6f}",
+        "",
+        "Forecasts:",
+    ]
+
+    horizon_labels = {3: "3-Day", 14: "2-Week", 90: "3-Month"}
+    for h_days, h_label in horizon_labels.items():
+        fc = forecasts.get(h_days, {})
+        if not fc:
+            lines.append(f"  {h_label:<10} : forecast unavailable")
+            continue
+
+        pred_price = fc.get("predicted_price", 0.0)
+        pred_ret = fc.get("predicted_return", 0.0)
+        lower = fc.get("confidence_lower", 0.0)
+        upper = fc.get("confidence_upper", 0.0)
+        conf_lvl = fc.get("confidence_level", 0.0)
+        direction = "UP" if pred_ret > 0 else "DOWN"
+        pct_chg = (pred_price / current_price - 1) * 100
+
+        lines += [
+            f"  {h_label} ({h_days}d):",
+            f"    Predicted price  : ${pred_price:.2f}  ({pct_chg:+.1f}%  →  {direction})",
+            f"    95% CI           : ${lower:.2f} – ${upper:.2f}",
+            f"    Model confidence : {conf_lvl:.0%}",
+        ]
+
+    lines += [
+        "",
+        "Model notes:",
+        "  - Predictions are ensemble averages of Linear + RF on rolling 20-day windows.",
+        "  - Confidence intervals widen with horizon (vol scales with √time).",
+        "  - 3-month forecasts carry very high uncertainty — treat as directional only.",
+        "  - In-sample RMSE measures training fit, not out-of-sample accuracy.",
+        "",
+        "IMPORTANT: This is an educational ML demonstration. These forecasts:",
+        "  ✗ Are NOT investment advice",
+        "  ✗ Cannot reliably predict price direction",
+        "  ✗ Are trained on the same data they are tested on (in-sample bias)",
+        "  ✗ Do not account for earnings, macro shocks, or regime changes",
+        "  ✓ Illustrate how ensemble ML models are applied to financial time series",
+    ]
+    return "\n".join(lines)

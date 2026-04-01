@@ -539,9 +539,10 @@ def get_research_brief(
           3. News Sentiment Summary
           4. Social Sentiment Summary
           5. Market Fear & Greed Context
-          6. Signal Scorecard (bull / bear / neutral)
-          7. Decision Framework (what to consider, what to verify)
-          8. Disclaimers
+          6. ML Price Forecast (3-day, 2-week, 3-month ensemble)
+          7. Signal Scorecard (bull / bear / neutral)
+          8. Decision Framework (what to consider, what to verify)
+          9. Disclaimers
     """
     ticker = ticker.strip().upper()
     lines = [
@@ -666,7 +667,30 @@ def get_research_brief(
 
     lines.append("")
 
-    # ── Section 6: Signal Scorecard ───────────────────────────────────────────
+    # ── Section 6: ML Forecast ────────────────────────────────────────────────
+    lines.append("━━━ 6. ML PRICE FORECAST ━━━")
+    try:
+        from agents.live_tools import get_ml_forecast
+        ml_text = get_ml_forecast(ticker, start=start)
+        for line in ml_text.split("\n"):
+            if any(k in line for k in [
+                "Current price", "Predicted price", "95% CI",
+                "Model confidence", "3-Day", "2-Week", "3-Month",
+            ]):
+                lines.append(f"  {line.strip()}")
+                # Use 3-day ML signal for scorecard
+                if "3-Day" in line and "Predicted price" in line:
+                    if "UP" in line:
+                        bull_signals.append(f"ML 3-day forecast: {line.strip()}")
+                    elif "DOWN" in line:
+                        bear_signals.append(f"ML 3-day forecast: {line.strip()}")
+        lines.append("  (ML forecasts are educational only — see full disclaimer below)")
+    except Exception as exc:
+        lines.append(f"  ML forecast unavailable: {exc}")
+
+    lines.append("")
+
+    # ── Section 7: Signal Scorecard ───────────────────────────────────────────
     total = len(bull_signals) + len(bear_signals) + len(neutral_signals)
     if total > 0:
         bull_pct = len(bull_signals) / total
@@ -681,7 +705,7 @@ def get_research_brief(
         overall_bias = "INSUFFICIENT DATA"
 
     lines += [
-        "━━━ 6. SIGNAL SCORECARD ━━━",
+        "━━━ 7. SIGNAL SCORECARD ━━━",
         f"  Overall Bias : {overall_bias}",
         f"  Bull signals : {len(bull_signals)}",
         f"  Bear signals : {len(bear_signals)}",
@@ -708,7 +732,7 @@ def get_research_brief(
 
     lines += [
         "",
-        "━━━ 7. DECISION FRAMEWORK ━━━",
+        "━━━ 8. DECISION FRAMEWORK ━━━",
         "  Before making any decision, consider verifying the following:",
         "",
         "  Fundamental questions:",
@@ -726,7 +750,7 @@ def get_research_brief(
         "    □ How long the current regime will persist",
         "    □ Whether sentiment is leading or lagging price",
         "",
-        "━━━ 8. DISCLAIMERS ━━━",
+        "━━━ 9. DISCLAIMERS ━━━",
         "  ⚠  This research brief is for EDUCATIONAL PURPOSES ONLY.",
         "  ⚠  It does not constitute investment advice or a recommendation.",
         "  ⚠  All backtest figures are IN-SAMPLE and subject to overfitting.",

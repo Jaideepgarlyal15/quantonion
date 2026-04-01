@@ -356,6 +356,7 @@ if run_button:
 
     # ML models (optional)
     ml_models: Optional[Dict] = st.session_state.get("ml_models")
+    df["PredictedPriceNextML"] = np.nan  # always present; filled below if ML trained
     if enable_ml:
         if train_ml_btn:
             with st.spinner("Training ML models…"):
@@ -366,8 +367,6 @@ if run_button:
                 df["PredictedPriceNextML"] = add_ml_prediction_column(
                     df_prices, features, ml_models
                 )
-    else:
-        df["PredictedPriceNextML"] = np.nan
 
     # ML forecasts
     forecasts: Dict = {}

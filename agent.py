@@ -35,6 +35,7 @@ from agents.live_tools import (
     run_backtest_analysis,
     compare_all_strategies,
     get_risk_metrics,
+    get_ml_forecast,
 )
 from agents.sentiment_tools import (
     get_news_sentiment,
@@ -66,6 +67,7 @@ _TOOLS = [
     run_backtest_analysis,
     compare_all_strategies,
     get_risk_metrics,
+    get_ml_forecast,
     get_news_sentiment,
     get_social_buzz,
     get_fear_and_greed_index,
