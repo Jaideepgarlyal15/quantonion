@@ -480,6 +480,29 @@ with tab_bt:
         fig_dd = plot_drawdown_chart(bt_results)
         st.plotly_chart(fig_dd, use_container_width=True)
 
+        # ── ML forecast cards ──────────────────────────────────────────────────
+        forecasts_bt = r.get("forecasts", {})
+        if forecasts_bt:
+            st.markdown("### ML Price Forecasts")
+            current_price_bt = float(r["df_prices"]["Adj Close"].iloc[-1])
+            horizon_labels = {3: "3-Day", 14: "2-Week", 90: "3-Month"}
+            fc_cols = st.columns(len(forecasts_bt))
+            for col, (h, f) in zip(fc_cols, sorted(forecasts_bt.items())):
+                with col:
+                    st.markdown(f"**{horizon_labels.get(h, f'{h}-Day')}**")
+                    st.metric(
+                        "Forecast",
+                        f"${f['predicted_price']:.2f}",
+                        delta=f"{f['predicted_return']:.2%}",
+                        help=f"95% CI: ${f['confidence_lower']:.2f} to ${f['confidence_upper']:.2f}",
+                    )
+                    st.caption(f"Confidence: {f['confidence_level']:.0%}")
+        elif r.get("enable_ml"):
+            st.info(
+                "ML models trained. Click **Run Analysis** again to generate forecasts.",
+                icon="ℹ️",
+            )
+
         # ── Strategy signals inspector ─────────────────────────────────────────
         with st.expander("Signal Inspector", expanded=False):
             selected_inspect = st.selectbox(
@@ -541,6 +564,7 @@ with tab_bt:
                 file_name=f"{r['symbol'].replace('^','')}_equity_curves.csv",
                 mime="text/csv",
             )
+
 
 # ── TAB: REGIMES ──────────────────────────────────────────────────────────────
 with tab_regimes:
