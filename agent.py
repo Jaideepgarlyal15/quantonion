@@ -45,7 +45,7 @@ def create_agent():
         plugins=[re_act],
         tools=_TOOLS,
         system_prompt=_system_prompt(),
-        max_iterations=12,
+        max_iterations=6,
     )
 
 
