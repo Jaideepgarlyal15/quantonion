@@ -67,3 +67,10 @@ permissions:
     reason: read-only sentiment fetch
     expires:
       type: never
+
+  "get_macro_context":
+    allowed: true
+    source: safe
+    reason: read-only macro data fetch (Treasury XML + yfinance)
+    expires:
+      type: never

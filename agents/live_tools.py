@@ -10,9 +10,10 @@ import os
 import re
 import time
 import warnings
+import xml.etree.ElementTree as ET
 warnings.filterwarnings("ignore")
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Optional
 
 import numpy as np
@@ -724,5 +725,209 @@ def get_market_sentiment(ticker: str) -> str:
         "",
         "Sentiment is context, not a signal. High fear has historically preceded recoveries.",
         "Do not trade on sentiment data alone.",
+    ]
+    return "\n".join(lines)
+
+
+def get_macro_context(ticker: str = "SPY") -> str:
+    """
+    Fetch macro regime context: US yield curve, US Dollar Index, and Fed rate proxy.
+
+    Data sources (all free, no API key required):
+      - US Treasury daily yield curve XML: 2-year and 10-year nominal yields
+      - DX-Y.NYB (US Dollar Index) via yfinance
+      - ^IRX (13-week T-bill) via yfinance as a Fed funds rate proxy
+
+    The yield curve spread (10Y minus 2Y) is one of the most reliable leading
+    indicators of recession. An inverted curve (spread < 0) has preceded every
+    US recession since 1955, with a 6-24 month lead time.
+
+    Args:
+        ticker: Asset ticker for context labelling. Macro data itself is global.
+
+    Returns:
+        Formatted string with 2Y/10Y yields, spread and curve interpretation,
+        DXY level and 5-day trend, Fed proxy rate and outlook, and a one-line
+        macro regime label.
+    """
+    lines = [f"Macro Context", f"As of {_today()}", ""]
+
+    # ── 1. US Treasury Yield Curve ────────────────────────────────────────────
+    lines.append("US Treasury Yield Curve:")
+    y2, y10 = None, None
+    try:
+        now = datetime.today()
+        # Try current month, then prior two months in case data not yet published
+        for months_back in range(3):
+            d = now - timedelta(days=30 * months_back)
+            resp = requests.get(
+                "https://home.treasury.gov/resource-center/data-chart-center/"
+                "interest-rates/pages/xml",
+                params={
+                    "data": "daily_treasury_yield_curve",
+                    "field_tdate_month": f"{d.month:02d}",
+                    "field_tdate_year": str(d.year),
+                },
+                timeout=12,
+                headers={"User-Agent": "QuantOnion/1.0"},
+            )
+            if resp.status_code != 200:
+                continue
+
+            root = ET.fromstring(resp.text)
+            # Atom feed — get the last (most recent) entry
+            atom_ns = "http://www.w3.org/2005/Atom"
+            meta_ns = "http://schemas.microsoft.com/ado/2007/08/dataservices/metadata"
+            entries = root.findall(f"{{{atom_ns}}}entry")
+            if not entries:
+                continue
+
+            last_entry = entries[-1]
+            content = last_entry.find(f"{{{atom_ns}}}content")
+            if content is None:
+                continue
+            props = content.find(f"{{{meta_ns}}}properties")
+            if props is None:
+                continue
+
+            # Search tag names robustly — Treasury uses BC_2YEAR / BC_10YEAR or d:BC_2YEAR
+            for elem in props.iter():
+                tag = elem.tag.split("}")[-1].upper()
+                if "2YEAR" in tag and elem.text and elem.text.strip():
+                    try:
+                        y2 = float(elem.text)
+                    except ValueError:
+                        pass
+                if "10YEAR" in tag and elem.text and elem.text.strip():
+                    try:
+                        y10 = float(elem.text)
+                    except ValueError:
+                        pass
+
+            if y2 is not None and y10 is not None:
+                break  # found data
+
+        if y2 is not None and y10 is not None:
+            spread = y10 - y2
+            if spread > 1.0:
+                curve_label = "Steep — markets pricing in strong growth"
+            elif spread > 0.25:
+                curve_label = "Normal — modest growth expectations"
+            elif spread > 0:
+                curve_label = "Flat — late cycle, growth slowing"
+            elif spread > -0.5:
+                curve_label = "Mildly inverted — recession risk elevated, monitor"
+            else:
+                curve_label = "Deeply inverted — strong recession warning (historically reliable)"
+
+            lines += [
+                f"  2-Year yield  : {y2:.2f}%",
+                f"  10-Year yield : {y10:.2f}%",
+                f"  Spread (10-2) : {spread:+.2f}%  →  {curve_label}",
+            ]
+        else:
+            lines.append("  Yield data unavailable — Treasury XML returned no entries.")
+    except Exception as exc:
+        lines.append(f"  Yield curve fetch failed: {exc}")
+
+    lines.append("")
+
+    # ── 2. US Dollar Index (DXY) ──────────────────────────────────────────────
+    lines.append("US Dollar Index (DXY):")
+    try:
+        dxy_hist = yf.Ticker("DX-Y.NYB").history(period="10d")
+        if not dxy_hist.empty and len(dxy_hist) >= 2:
+            dxy = float(dxy_hist["Close"].iloc[-1])
+            dxy_prev = float(dxy_hist["Close"].iloc[-2])
+            dxy_5d = float(dxy_hist["Close"].iloc[max(0, len(dxy_hist) - 6)])
+            chg_1d = dxy - dxy_prev
+            chg_5d = dxy - dxy_5d
+
+            if dxy > 105:
+                dxy_label = "Strong — headwind for commodities, EM equities, and non-USD assets"
+            elif dxy > 100:
+                dxy_label = "Elevated — mildly negative for risk assets"
+            elif dxy > 95:
+                dxy_label = "Moderate — broadly neutral"
+            else:
+                dxy_label = "Weak — tailwind for commodities and international equities"
+
+            trend = (
+                "strengthening" if chg_5d > 0.5 else
+                "weakening" if chg_5d < -0.5 else
+                "stable"
+            )
+            lines += [
+                f"  DXY  : {dxy:.2f}  "
+                f"({'+' if chg_1d >= 0 else ''}{chg_1d:.2f} today, "
+                f"{'+' if chg_5d >= 0 else ''}{chg_5d:.2f} over 5 days — {trend})",
+                f"  Reading: {dxy_label}",
+            ]
+        else:
+            lines.append("  DXY: unavailable")
+    except Exception:
+        lines.append("  DXY fetch failed.")
+
+    lines.append("")
+
+    # ── 3. Fed Rate Proxy (3-month T-bill) ────────────────────────────────────
+    lines.append("Fed Rate Proxy (3-month T-bill, ^IRX):")
+    try:
+        irx_hist = yf.Ticker("^IRX").history(period="10d")
+        if not irx_hist.empty:
+            irx = float(irx_hist["Close"].iloc[-1])
+            irx_5d = float(irx_hist["Close"].iloc[max(0, len(irx_hist) - 6)])
+            irx_chg = irx - irx_5d
+
+            if irx_chg > 0.15:
+                fed_outlook = "Rising — market pricing in rate hike(s) or delay in cuts"
+            elif irx_chg < -0.15:
+                fed_outlook = "Falling — market pricing in rate cut(s)"
+            else:
+                fed_outlook = "Stable — no near-term move priced in"
+
+            lines += [
+                f"  3M T-bill : {irx:.2f}%  "
+                f"({'+' if irx_chg >= 0 else ''}{irx_chg:.2f}% vs 5 days ago)",
+                f"  Fed outlook: {fed_outlook}",
+                "  Note: 3M T-bill closely tracks the effective Fed funds rate.",
+            ]
+        else:
+            lines.append("  T-bill data unavailable.")
+    except Exception:
+        lines.append("  Fed proxy fetch failed.")
+
+    lines.append("")
+
+    # ── 4. Macro Regime One-liner ─────────────────────────────────────────────
+    lines.append("Macro Regime:")
+    try:
+        signals = []
+        if y2 is not None and y10 is not None:
+            spread = y10 - y2
+            if spread < 0:
+                signals.append(f"inverted curve ({spread:+.2f}%)")
+            else:
+                signals.append(f"normal curve ({spread:+.2f}%)")
+        dxy_signal = ""
+        try:
+            if not dxy_hist.empty:
+                dxy_val = float(dxy_hist["Close"].iloc[-1])
+                dxy_signal = "strong USD" if dxy_val > 102 else "weak USD"
+                signals.append(dxy_signal)
+        except Exception:
+            pass
+
+        if signals:
+            lines.append(f"  {' | '.join(signals)}")
+        else:
+            lines.append("  Insufficient data for macro regime summary.")
+    except Exception:
+        lines.append("  Macro regime summary unavailable.")
+
+    lines += [
+        "",
+        "Yield curve inversion precedes recessions by 6-24 months on average.",
+        "It is a directional indicator, not a timing signal — do not use alone.",
     ]
     return "\n".join(lines)

@@ -12,6 +12,7 @@ from agents.live_tools import (
     get_risk_metrics,
     get_ml_forecast,
     get_market_sentiment,
+    get_macro_context,
 )
 
 _TOOLS = [
@@ -22,6 +23,7 @@ _TOOLS = [
     get_risk_metrics,
     get_ml_forecast,
     get_market_sentiment,
+    get_macro_context,
 ]
 
 _PROMPT_PATH = Path(__file__).parent / "prompts" / "agent_system.txt"
@@ -43,7 +45,7 @@ def create_agent():
         model="co/gemini-2.5-pro",
         tools=_TOOLS,
         system_prompt=_system_prompt(),
-        max_iterations=6,
+        max_iterations=8,
     )
 
 
