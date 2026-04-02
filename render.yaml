@@ -3,12 +3,16 @@ services:
     name: quantonion
     env: python
     plan: free
-    buildCommand: pip install -r requirements.dashboard.txt
-    startCommand: streamlit run app.py --server.port $PORT --server.address 0.0.0.0
+    buildCommand: pip install -r requirements.txt
+    startCommand: bash start.sh
     autoDeploy: true
     envVars:
       - key: PYTHON_VERSION
-        value: 3.11.4
-      # Add ALPHAVANTAGE_API_KEY, TWELVE_DATA_API_KEY as environment variables
-      # in the Render dashboard (not here in YAML).
-      # ConnectOnion AI features require `co auth` — not a key in env vars.
+        value: "3.11.4"
+      - key: PORT
+        value: "8000"
+      # CO_AGENT_KEY_B64: base64-encoded .co/keys/agent.key
+      # Set this in the Render dashboard — NEVER commit the key value here.
+      # Generate with: base64 -i .co/keys/agent.key | tr -d '\n'
+      - key: CO_AGENT_KEY_B64
+        sync: false

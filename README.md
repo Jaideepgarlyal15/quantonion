@@ -6,7 +6,23 @@
 [![ConnectOnion](https://img.shields.io/badge/agent%20framework-ConnectOnion-6C63FF.svg)](https://connectonion.com)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-**Live demo → [chat.openonion.ai](https://chat.openonion.ai/0x2c52555603cf676e39ed12cceea5f9c3d3580a1b7a2e9e16b348fcb23d81d8e9)**
+---
+
+## Try it now — no setup required
+
+**[→ Chat with QuantOnion](https://chat.openonion.ai/0x2c52555603cf676e39ed12cceea5f9c3d3580a1b7a2e9e16b348fcb23d81d8e9)**
+
+The agent is live. Type any of these to get started:
+
+```
+What is the current market regime for AAPL?
+Compare all strategies for SPY
+Show ML price forecasts for NVDA
+What are the risk metrics for BTC-USD?
+Analyse TSLA — full research brief
+```
+
+No account. No API key. Just click and ask.
 
 ---
 
@@ -47,16 +63,30 @@ The agent has 7 tools, each callable independently or as part of a full brief:
 
 ## Quick start
 
+### Run locally
+
 ```bash
-git clone https://github.com/your-username/regime-switching-dashboard
-cd regime-switching-dashboard
+git clone https://github.com/Jaideepgarlyal15/quantonion
+cd quantonion
 pip install -r requirements.txt
+co auth          # one-time ConnectOnion login
 python agent.py
 ```
 
-The agent starts on `http://localhost:8000` and automatically registers with the ConnectOnion relay. Open the live demo link above to chat with it.
+The agent starts on `http://localhost:8000`, connects to the relay, and is immediately accessible at your chat.openonion.ai agent link. No other keys required.
 
-You need a ConnectOnion API key (`co auth` to set it up). No other keys are required.
+### Deploy to Render (always-on)
+
+So the demo link works 24/7 without your laptop running:
+
+1. Fork this repo and connect it to [render.com](https://render.com) → New Web Service
+2. Render will use `render.yaml` automatically (`bash start.sh` → `python agent.py`)
+3. In the Render dashboard, add one environment variable:
+   ```
+   CO_AGENT_KEY_B64  =  <output of: base64 -i .co/keys/agent.key | tr -d '\n'>
+   ```
+   This restores your agent's cryptographic identity (same address, same chat link) on the Render server.
+4. Deploy. Your agent URL stays the same — `chat.openonion.ai/0x2c52555...`
 
 ---
 
