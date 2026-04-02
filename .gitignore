@@ -22,6 +22,11 @@ env/
 .co/cache/
 .co/logs/
 .co/history/
+.co/evals/
+.co/session_results.jsonl
+
+# ── Claude Code ───────────────────────────────────────────────────────────────
+.claude/
 
 # ── OS / editor ───────────────────────────────────────────────────────────────
 .DS_Store

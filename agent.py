@@ -40,10 +40,10 @@ def _system_prompt():
 def create_agent():
     return Agent(
         name="quantonion_research_agent",
-        model="co/gpt-5-nano",
+        model="co/gemini-2.5-pro",
         tools=_TOOLS,
         system_prompt=_system_prompt(),
-        max_iterations=3,
+        max_iterations=6,
     )
 
 
