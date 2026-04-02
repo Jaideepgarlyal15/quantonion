@@ -1,12 +1,11 @@
 """
 QuantOnion live tools for the ConnectOnion research agent.
 
-Six functions the agent calls to fetch live market data and compute results.
+Eight tools the agent calls to fetch live market data and compute results.
 Each returns a plain string. Each accepts only primitive argument types.
 Exceptions are caught internally; errors are returned as strings.
 """
 
-import os
 import re
 import time
 import warnings
@@ -63,14 +62,6 @@ def _load_cached(ticker: str, start: str, end: str):
 
 def _today():
     return datetime.today().strftime("%Y-%m-%d")
-
-
-def _fmt_pct(v):
-    return f"{v:.1%}"
-
-
-def _fmt2(v):
-    return f"{v:.2f}"
 
 
 def list_available_strategies() -> str:

@@ -88,10 +88,10 @@ def create_research_agent(context: Dict[str, Any]) -> Optional[Any]:
     try:
         agent = Agent(
             name="quantonion_research_agent",
-            model="co/gpt-5-nano",
+            model="co/gemini-2.5-pro",
             tools=tools,
             system_prompt=system_prompt,
-            max_iterations=3,
+            max_iterations=8,
         )
         return agent
     except Exception:

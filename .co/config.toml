@@ -11,12 +11,12 @@ template = "none"
 
 [agent]
 algorithm = "ed25519"
-default_model = "co/gpt-5-nano"
-max_iterations = 3
+default_model = "co/gemini-2.5-pro"
+max_iterations = 8
 created_at = "2026-03-14T15:23:10.420590"
 
 [plugins]
-enabled = ["re_act"]
+enabled = []
 
 [deploy]
 entrypoint = "agent.py"
