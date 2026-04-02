@@ -1,0 +1,69 @@
+# QuantOnion host configuration — read by host() at startup
+# Edit here, then redeploy. Code parameters override these values.
+
+trust: open
+port: 8000
+workers: 1
+result_ttl: 86400
+relay_url: wss://oo.openonion.ai/ws/announce
+reload: false
+
+# Agent metadata shown on chat.openonion.ai
+summary: "QuantOnion — AI-powered regime-switching backtesting agent. Detects market regimes via HMM, backtests 6 strategies, forecasts prices with ML ensemble."
+examples:
+  - "Analyse AAPL — full research brief"
+  - "What is the current market regime for TSLA?"
+  - "Compare all strategies for SPY and recommend the best one"
+  - "Show ML price forecasts for NVDA"
+  - "What are the risk metrics for BTC-USD?"
+
+# Auto-approve all QuantOnion live tools — no interruption during agent execution
+permissions:
+  "list_available_strategies":
+    allowed: true
+    source: safe
+    reason: read-only tool list
+    expires:
+      type: never
+
+  "detect_current_regime":
+    allowed: true
+    source: safe
+    reason: read-only market data fetch
+    expires:
+      type: never
+
+  "run_backtest_analysis":
+    allowed: true
+    source: safe
+    reason: read-only backtest computation
+    expires:
+      type: never
+
+  "compare_all_strategies":
+    allowed: true
+    source: safe
+    reason: read-only comparative analysis
+    expires:
+      type: never
+
+  "get_risk_metrics":
+    allowed: true
+    source: safe
+    reason: read-only risk calculation
+    expires:
+      type: never
+
+  "get_ml_forecast":
+    allowed: true
+    source: safe
+    reason: read-only ML inference
+    expires:
+      type: never
+
+  "get_market_sentiment":
+    allowed: true
+    source: safe
+    reason: read-only sentiment fetch
+    expires:
+      type: never

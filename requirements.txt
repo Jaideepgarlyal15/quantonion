@@ -2,7 +2,7 @@
 # For the full Streamlit dashboard: pip install -r requirements.dashboard.txt
 
 # ── Agent framework ───────────────────────────────────────────────────────────
-connectonion>=0.8.8
+connectonion>=0.8.9
 
 # ── Market data ───────────────────────────────────────────────────────────────
 yfinance>=0.2.40
