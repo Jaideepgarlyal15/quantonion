@@ -22,8 +22,31 @@ import os
 import numpy as np
 import pandas as pd
 import requests
-import streamlit as st
 import yfinance as yf
+
+# Optional Streamlit integration — the agent runs fine without it.
+try:
+    import streamlit as st
+    _st_available = True
+except ImportError:
+    st = None  # type: ignore
+    _st_available = False
+
+
+def _cache_data(ttl=3600):  # noqa: ARG001
+    """No-op cache decorator used when Streamlit is not available."""
+    def decorator(fn):
+        return fn
+    return decorator
+
+
+if not _st_available:
+    # Patch so @st.cache_data(ttl=...) calls below work without Streamlit
+    import types
+    st = types.SimpleNamespace(  # type: ignore
+        cache_data=_cache_data,
+        secrets=types.SimpleNamespace(get=lambda _: None),
+    )
 
 ASX_SUFFIX = ".AX"
 
