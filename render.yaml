@@ -12,7 +12,9 @@ services:
       - key: PORT
         value: "8000"
       # CO_AGENT_KEY_B64: base64-encoded .co/keys/agent.key
-      # Set this in the Render dashboard — NEVER commit the key value here.
       # Generate with: base64 -i .co/keys/agent.key | tr -d '\n'
       - key: CO_AGENT_KEY_B64
+        sync: false
+      # OPENONION_API_KEY: JWT from ~/.co/keys.env (set by 'co auth')
+      - key: OPENONION_API_KEY
         sync: false
