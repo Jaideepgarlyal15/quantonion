@@ -729,34 +729,32 @@ def get_market_sentiment(ticker: str) -> str:
     return "\n".join(lines)
 
 
-def get_macro_context(ticker: str = "SPY") -> str:
+def get_macro_context() -> str:
     """
     Fetch macro regime context: US yield curve, US Dollar Index, and Fed rate proxy.
 
     Data sources (all free, no API key required):
       - US Treasury daily yield curve XML: 2-year and 10-year nominal yields
-      - DX-Y.NYB (US Dollar Index) via yfinance
-      - ^IRX (13-week T-bill) via yfinance as a Fed funds rate proxy
-
-    The yield curve spread (10Y minus 2Y) is one of the most reliable leading
-    indicators of recession. An inverted curve (spread < 0) has preceded every
-    US recession since 1955, with a 6-24 month lead time.
-
-    Args:
-        ticker: Asset ticker for context labelling. Macro data itself is global.
+      - DX-Y.NYB (US Dollar Index) and ^IRX (13-week T-bill) via yfinance
 
     Returns:
         Formatted string with 2Y/10Y yields, spread and curve interpretation,
         DXY level and 5-day trend, Fed proxy rate and outlook, and a one-line
         macro regime label.
     """
-    lines = [f"Macro Context", f"As of {_today()}", ""]
+    cached = _cache_get("macro_context")
+    if cached is not None:
+        return cached
+
+    lines = ["Macro Context", f"As of {_today()}", ""]
 
     # ── 1. US Treasury Yield Curve ────────────────────────────────────────────
     lines.append("US Treasury Yield Curve:")
-    y2, y10 = None, None
+    y2, y10, spread = None, None, None
     try:
         now = datetime.today()
+        atom_ns = "http://www.w3.org/2005/Atom"
+        meta_ns = "http://schemas.microsoft.com/ado/2007/08/dataservices/metadata"
         # Try current month, then prior two months in case data not yet published
         for months_back in range(3):
             d = now - timedelta(days=30 * months_back)
@@ -772,25 +770,18 @@ def get_macro_context(ticker: str = "SPY") -> str:
                 headers={"User-Agent": "QuantOnion/1.0"},
             )
             if resp.status_code != 200:
-                continue
+                break  # non-200 is a server error — do not retry with older months
 
             root = ET.fromstring(resp.text)
-            # Atom feed — get the last (most recent) entry
-            atom_ns = "http://www.w3.org/2005/Atom"
-            meta_ns = "http://schemas.microsoft.com/ado/2007/08/dataservices/metadata"
             entries = root.findall(f"{{{atom_ns}}}entry")
             if not entries:
-                continue
+                continue  # empty month — try the previous one
 
-            last_entry = entries[-1]
-            content = last_entry.find(f"{{{atom_ns}}}content")
-            if content is None:
-                continue
-            props = content.find(f"{{{meta_ns}}}properties")
+            props = entries[-1].find(f"{{{atom_ns}}}content/{{{meta_ns}}}properties")
             if props is None:
                 continue
 
-            # Search tag names robustly — Treasury uses BC_2YEAR / BC_10YEAR or d:BC_2YEAR
+            # Treasury tag names vary: BC_2YEAR or d:BC_2YEAR — strip namespace prefix
             for elem in props.iter():
                 tag = elem.tag.split("}")[-1].upper()
                 if "2YEAR" in tag and elem.text and elem.text.strip():
@@ -805,7 +796,7 @@ def get_macro_context(ticker: str = "SPY") -> str:
                         pass
 
             if y2 is not None and y10 is not None:
-                break  # found data
+                break
 
         if y2 is not None and y10 is not None:
             spread = y10 - y2
@@ -823,7 +814,7 @@ def get_macro_context(ticker: str = "SPY") -> str:
             lines += [
                 f"  2-Year yield  : {y2:.2f}%",
                 f"  10-Year yield : {y10:.2f}%",
-                f"  Spread (10-2) : {spread:+.2f}%  →  {curve_label}",
+                f"  Spread (10-2) : {spread:+.2f}%  ({curve_label})",
             ]
         else:
             lines.append("  Yield data unavailable — Treasury XML returned no entries.")
@@ -832,16 +823,20 @@ def get_macro_context(ticker: str = "SPY") -> str:
 
     lines.append("")
 
-    # ── 2. US Dollar Index (DXY) ──────────────────────────────────────────────
-    lines.append("US Dollar Index (DXY):")
+    # ── 2. US Dollar Index (DXY) and Fed Rate Proxy (^IRX) — fetched together ─
+    dxy_hist = None
     try:
-        dxy_hist = yf.Ticker("DX-Y.NYB").history(period="10d")
-        if not dxy_hist.empty and len(dxy_hist) >= 2:
-            dxy = float(dxy_hist["Close"].iloc[-1])
-            dxy_prev = float(dxy_hist["Close"].iloc[-2])
-            dxy_5d = float(dxy_hist["Close"].iloc[max(0, len(dxy_hist) - 6)])
-            chg_1d = dxy - dxy_prev
-            chg_5d = dxy - dxy_5d
+        bulk = yf.download(["DX-Y.NYB", "^IRX"], period="7d", progress=False)
+        # yfinance returns MultiIndex columns when downloading multiple tickers
+        close = bulk["Close"] if "Close" in bulk.columns else bulk.xs("Close", axis=1, level=0)
+
+        lines.append("US Dollar Index (DXY):")
+        dxy_series = close["DX-Y.NYB"].dropna() if "DX-Y.NYB" in close else pd.Series(dtype=float)
+        if len(dxy_series) >= 2:
+            dxy_hist = dxy_series  # kept for regime section below
+            dxy = float(dxy_series.iloc[-1])
+            chg_1d = dxy - float(dxy_series.iloc[-2])
+            chg_5d = dxy - float(dxy_series.iloc[max(0, len(dxy_series) - 6)])
 
             if dxy > 105:
                 dxy_label = "Strong — headwind for commodities, EM equities, and non-USD assets"
@@ -865,18 +860,13 @@ def get_macro_context(ticker: str = "SPY") -> str:
             ]
         else:
             lines.append("  DXY: unavailable")
-    except Exception:
-        lines.append("  DXY fetch failed.")
 
-    lines.append("")
-
-    # ── 3. Fed Rate Proxy (3-month T-bill) ────────────────────────────────────
-    lines.append("Fed Rate Proxy (3-month T-bill, ^IRX):")
-    try:
-        irx_hist = yf.Ticker("^IRX").history(period="10d")
-        if not irx_hist.empty:
-            irx = float(irx_hist["Close"].iloc[-1])
-            irx_5d = float(irx_hist["Close"].iloc[max(0, len(irx_hist) - 6)])
+        lines.append("")
+        lines.append("Fed Rate Proxy (3-month T-bill, ^IRX):")
+        irx_series = close["^IRX"].dropna() if "^IRX" in close else pd.Series(dtype=float)
+        if len(irx_series) >= 1:
+            irx = float(irx_series.iloc[-1])
+            irx_5d = float(irx_series.iloc[max(0, len(irx_series) - 6)])
             irx_chg = irx - irx_5d
 
             if irx_chg > 0.15:
@@ -894,40 +884,28 @@ def get_macro_context(ticker: str = "SPY") -> str:
             ]
         else:
             lines.append("  T-bill data unavailable.")
-    except Exception:
-        lines.append("  Fed proxy fetch failed.")
+
+    except Exception as exc:
+        lines.append(f"  Market data fetch failed: {exc}")
 
     lines.append("")
 
-    # ── 4. Macro Regime One-liner ─────────────────────────────────────────────
+    # ── 3. Macro Regime One-liner ─────────────────────────────────────────────
     lines.append("Macro Regime:")
-    try:
-        signals = []
-        if y2 is not None and y10 is not None:
-            spread = y10 - y2
-            if spread < 0:
-                signals.append(f"inverted curve ({spread:+.2f}%)")
-            else:
-                signals.append(f"normal curve ({spread:+.2f}%)")
-        dxy_signal = ""
-        try:
-            if not dxy_hist.empty:
-                dxy_val = float(dxy_hist["Close"].iloc[-1])
-                dxy_signal = "strong USD" if dxy_val > 102 else "weak USD"
-                signals.append(dxy_signal)
-        except Exception:
-            pass
-
-        if signals:
-            lines.append(f"  {' | '.join(signals)}")
-        else:
-            lines.append("  Insufficient data for macro regime summary.")
-    except Exception:
-        lines.append("  Macro regime summary unavailable.")
+    signals = []
+    if spread is not None:
+        signals.append(f"inverted curve ({spread:+.2f}%)" if spread < 0 else f"normal curve ({spread:+.2f}%)")
+    if dxy_hist is not None and len(dxy_hist) >= 1:
+        dxy_last = float(dxy_hist.iloc[-1])
+        signals.append("strong USD" if dxy_last > 102 else "weak USD")
+    lines.append(f"  {' | '.join(signals)}" if signals else "  Insufficient data for macro regime summary.")
 
     lines += [
         "",
         "Yield curve inversion precedes recessions by 6-24 months on average.",
         "It is a directional indicator, not a timing signal — do not use alone.",
     ]
-    return "\n".join(lines)
+
+    result = "\n".join(lines)
+    _cache_set("macro_context", result)
+    return result
