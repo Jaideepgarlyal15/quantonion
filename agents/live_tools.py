@@ -8,6 +8,7 @@ Exceptions are caught internally; errors are returned as strings.
 
 import os
 import re
+import time
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -28,7 +29,35 @@ from backtesting.metrics import compute_metrics
 from strategies import STRATEGIES
 
 
-_DEFAULT_START = "2018-01-01"
+_DEFAULT_START = "2022-01-01"
+
+# ── In-process data cache (TTL: 5 minutes) ───────────────────────────────────
+_cache: dict = {}
+_CACHE_TTL = 300  # seconds
+
+
+def _cache_get(key: str):
+    entry = _cache.get(key)
+    if entry and time.time() - entry["ts"] < _CACHE_TTL:
+        return entry["val"]
+    return None
+
+
+def _cache_set(key: str, val):
+    _cache[key] = {"val": val, "ts": time.time()}
+
+
+def _load_cached(ticker: str, start: str, end: str):
+    """Load price data + features with 5-minute cache."""
+    key = f"{ticker}|{start}|{end}"
+    cached = _cache_get(key)
+    if cached is not None:
+        return cached
+    df, src = load_price_data(ticker, start, end, allow_synth=False)
+    features = build_features(df, vol_window=21) if not df.empty else pd.DataFrame()
+    result = (df, src, features)
+    _cache_set(key, result)
+    return result
 
 
 def _today():
@@ -58,7 +87,7 @@ def list_available_strategies() -> str:
 
 def detect_current_regime(
     ticker: str,
-    n_states: int = 3,
+    n_states: int = 2,
     start: str = _DEFAULT_START,
 ) -> str:
     """
@@ -81,11 +110,10 @@ def detect_current_regime(
     end = _today()
     ticker = normalize_symbol(ticker.strip())
 
-    df, src = load_price_data(ticker, start, end, allow_synth=False)
+    df, src, features = _load_cached(ticker, start, end)
     if df.empty:
         return f"No data for '{ticker}'. Check the symbol (Yahoo Finance format, e.g. '^GSPC')."
 
-    features = build_features(df, vol_window=21)
     if features.empty or len(features) < 60:
         return (
             f"Insufficient data for '{ticker}' ({len(features)} days after feature engineering). "
@@ -183,12 +211,11 @@ def run_backtest_analysis(
     if strategy not in STRATEGIES:
         return f"Unknown strategy '{strategy}'. Available: {', '.join(STRATEGIES)}"
 
-    df, src = load_price_data(ticker, start, end, allow_synth=False)
+    df, src, features = _load_cached(ticker, start, end)
     if df.empty:
         return f"No data for '{ticker}'."
 
     prices = df["Adj Close"]
-    features = build_features(df, vol_window=21)
 
     regime_series = None
     if strategy == "Regime Filter":
@@ -294,12 +321,11 @@ def compare_all_strategies(
         end = _today()
     ticker = normalize_symbol(ticker.strip())
 
-    df, src = load_price_data(ticker, start, end, allow_synth=False)
+    df, src, features = _load_cached(ticker, start, end)
     if df.empty:
         return f"No data for '{ticker}'."
 
     prices = df["Adj Close"]
-    features = build_features(df, vol_window=21)
 
     regime_series = None
     if len(features) >= 60:
@@ -397,7 +423,7 @@ def get_risk_metrics(
         end = _today()
     ticker = normalize_symbol(ticker.strip())
 
-    df, src = load_price_data(ticker, start, end, allow_synth=False)
+    df, src, _ = _load_cached(ticker, start, end)
     if df.empty:
         return f"No data for '{ticker}'."
 
@@ -478,11 +504,10 @@ def get_ml_forecast(
     end = _today()
     ticker = normalize_symbol(ticker.strip())
 
-    df, src = load_price_data(ticker, start, end, allow_synth=False)
+    df, src, features = _load_cached(ticker, start, end)
     if df.empty:
         return f"No data for '{ticker}'."
 
-    features = build_features(df, vol_window=21)
     if len(features) < 80:
         return f"Insufficient data for ML training ({len(features)} days; need 80+)."
 

@@ -3,7 +3,6 @@
 from pathlib import Path
 
 from connectonion import Agent, host
-from connectonion.useful_plugins import re_act
 
 from agents.live_tools import (
     list_available_strategies,
@@ -41,11 +40,10 @@ def _system_prompt():
 def create_agent():
     return Agent(
         name="quantonion_research_agent",
-        model="co/gemini-2.5-pro",
-        plugins=[re_act],
+        model="co/gpt-5-nano",
         tools=_TOOLS,
         system_prompt=_system_prompt(),
-        max_iterations=6,
+        max_iterations=3,
     )
 
 

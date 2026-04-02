@@ -215,4 +215,46 @@ def make_tools(context: Dict[str, Any]) -> List[Callable]:
         ]
         return "\n".join(lines)
 
-    return [get_strategy_summary, get_regime_context, compare_vs_benchmark, get_risk_analysis]
+    def get_ml_forecast_summary() -> str:
+        """
+        Return ML price forecasts for 3-day, 2-week, and 3-month horizons.
+
+        Returns:
+            Formatted string with predicted price, direction, expected return,
+            and 95% confidence interval for each horizon.
+        """
+        forecasts = context.get("forecasts", {})
+        current_price = context.get("current_price")
+        ticker = context.get("ticker", "Unknown")
+
+        if not forecasts:
+            return (
+                "ML forecasts not available. "
+                "Enable ML in the sidebar and click Run Analysis to generate forecasts."
+            )
+
+        horizon_labels = {3: "3-Day", 14: "2-Week", 90: "3-Month"}
+        lines = [f"ML Price Forecasts for {ticker}:"]
+        if current_price:
+            lines.append(f"Current Price: ${current_price:.2f}")
+        lines.append("")
+
+        for h in sorted(forecasts.keys()):
+            f = forecasts[h]
+            direction = "UP" if f["predicted_return"] > 0 else "DOWN"
+            label = horizon_labels.get(h, f"{h}-Day")
+            lines.append(
+                f"{label}: ${f['predicted_price']:.2f} ({direction} {f['predicted_return']:+.2%})"
+                f" | 95% CI: ${f['confidence_lower']:.2f}–${f['confidence_upper']:.2f}"
+                f" | Confidence: {f['confidence_level']:.0%}"
+            )
+
+        return "\n".join(lines)
+
+    return [
+        get_strategy_summary,
+        get_regime_context,
+        compare_vs_benchmark,
+        get_risk_analysis,
+        get_ml_forecast_summary,
+    ]

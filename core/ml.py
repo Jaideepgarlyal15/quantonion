@@ -72,8 +72,8 @@ def train_linear_model(X: np.ndarray, y: np.ndarray) -> LinearRegression:
 def train_rf_model(X: np.ndarray, y: np.ndarray) -> RandomForestRegressor:
     """Train a Random Forest as a robust non-linear model."""
     model = RandomForestRegressor(
-        n_estimators=200,
-        max_depth=6,
+        n_estimators=50,
+        max_depth=5,
         min_samples_leaf=10,
         n_jobs=-1,
         random_state=42,
@@ -130,8 +130,8 @@ def train_all_ml_models(
     if X.size == 0:
         return {}
 
-    # Limit history for speed (last ~1500 samples is plenty)
-    max_samples = 1500
+    # Limit history for speed
+    max_samples = 500
     if X.shape[0] > max_samples:
         X = X[-max_samples:]
         y = y[-max_samples:]

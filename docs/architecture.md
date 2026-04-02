@@ -23,15 +23,16 @@ QuantOnion is structured as a layered Python application with a Streamlit UI. Ea
 │  metrics.py     │  │ features    │  │  ├── create_research_agent()│
 │                 │  │ ml          │  │  └── run_agent_analysis()   │
 └────────┬────────┘  │ plotting    │  │                             │
-         │           │ data_loader │  │  tools.py                   │
+         │           │ data_loader │  │  tools.py (Streamlit agent) │
          │           │ portfolio   │  │  ├── get_strategy_summary() │
-         ▼           └──────┬──────┘  │  ├── get_regime_context()  │
+         ▼           └──────┬──────┘  │  ├── get_regime_context()   │
 ┌─────────────────┐         │         │  ├── compare_vs_benchmark() │
-│  Strategies     │         │         │  └── get_risk_analysis()    │
-│  (strategies/)  │         │         │                             │
-│                 │         │         │  ConnectOnion Agent         │
-│  BaseStrategy   │         │         │  (re_act plugin)            │
-│  BuyAndHold     │         │         └─────────────────────────────┘
+│  Strategies     │         │         │  ├── get_risk_analysis()    │
+│  (strategies/)  │         │         │  └── get_ml_forecast_summ() │
+│                 │         │         │                             │
+│  BaseStrategy   │         │         │  ConnectOnion Agent         │
+│  BuyAndHold     │         │         │  (re_act plugin)            │
+│                 │         │         └─────────────────────────────┘
 │  SMACrossover   │         │
 │  EMACrossover   │         │
 │  RSIReversion   │         ▼

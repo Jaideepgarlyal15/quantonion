@@ -41,12 +41,10 @@ from agents.tools import make_tools
 # ── ConnectOnion availability check ──────────────────────────────────────────
 try:
     from connectonion import Agent  # type: ignore[import]
-    from connectonion.useful_plugins import re_act  # type: ignore[import]
     _CONNECTONION_AVAILABLE = True
 except ImportError:
     _CONNECTONION_AVAILABLE = False
     Agent = None      # type: ignore[assignment, misc]
-    re_act = None     # type: ignore[assignment]
 
 # ── System prompt path ────────────────────────────────────────────────────────
 _PROMPT_PATH = Path(__file__).parent.parent / "prompts" / "system.txt"
@@ -70,9 +68,8 @@ def create_research_agent(context: Dict[str, Any]) -> Optional[Any]:
     Create a ConnectOnion Research Agent with tools bound to the backtest context.
 
     Uses:
-      - re_act plugin         — iterative Reason + Act loop
-      - 4 tools               — strategy metrics, regime stats, benchmark comparison, risk summary
-      - co/gemini-2.5-pro     — ConnectOnion-hosted Gemini 2.5 Pro model
+      - 5 tools               — strategy metrics, regime stats, benchmark comparison, risk summary, ML forecasts
+      - co/gpt-5-nano         — ConnectOnion-hosted GPT-5 Nano model (fast)
       - CLI auth              — authenticate once via `co auth` (no API key in code)
 
     Args:
@@ -91,10 +88,10 @@ def create_research_agent(context: Dict[str, Any]) -> Optional[Any]:
     try:
         agent = Agent(
             name="quantonion_research_agent",
-            model="co/gemini-2.5-pro",    # ConnectOnion-hosted model; auth via `co auth`
-            plugins=[re_act],             # imported object, not a string
+            model="co/gpt-5-nano",
             tools=tools,
             system_prompt=system_prompt,
+            max_iterations=3,
         )
         return agent
     except Exception:

@@ -16,7 +16,6 @@ from __future__ import annotations
 import warnings
 warnings.filterwarnings("ignore")
 
-import os
 from typing import Any, Dict, Optional
 
 import numpy as np
@@ -358,7 +357,8 @@ if run_button:
     ml_models: Optional[Dict] = st.session_state.get("ml_models")
     df["PredictedPriceNextML"] = np.nan  # always present; filled below if ML trained
     if enable_ml:
-        if train_ml_btn:
+        # Train if: explicit button clicked, or ML enabled but no cached models yet
+        if train_ml_btn or ml_models is None:
             with st.spinner("Training ML models…"):
                 ml_models = train_all_ml_models(df_prices, features, lookback=20)
             st.session_state["ml_models"] = ml_models
@@ -499,7 +499,8 @@ with tab_bt:
                     st.caption(f"Confidence: {f['confidence_level']:.0%}")
         elif r.get("enable_ml"):
             st.info(
-                "ML models trained. Click **Run Analysis** again to generate forecasts.",
+                "Enable **ML price forecasts** in the sidebar and click **🚀 Run Analysis** "
+                "to generate 3-day, 2-week, and 3-month price targets.",
                 icon="ℹ️",
             )
 
@@ -735,13 +736,10 @@ with tab_regimes:
 # ── TAB: AGENT ─────────────────────────────────────────────────────────────────
 with tab_agent:
     st.markdown("### 🤖 QuantOnion Research Agent")
-    st.caption("Powered by ConnectOnion · co/gemini-2.5-pro")
+    st.caption("Powered by ConnectOnion · co/gpt-5-nano")
 
-    try:
-        from connectonion import Agent as _CoAgent  # noqa: F401
-        _co_available = True
-    except ImportError:
-        _co_available = False
+    import importlib.util
+    _co_available = importlib.util.find_spec("connectonion") is not None
 
     if not _co_available:
         st.info(
@@ -752,25 +750,45 @@ with tab_agent:
         )
 
     # Agent context
+    _df_prices_agent = r.get("df_prices")
+    _current_price = (
+        float(_df_prices_agent["Adj Close"].iloc[-1])
+        if _df_prices_agent is not None and not _df_prices_agent.empty
+        else None
+    )
     agent_context = {
         "backtest_results": r.get("backtest_results", {}),
         "regime_stats": r.get("regime_stats"),
         "current_regime": r.get("current_regime", "Unknown"),
         "ticker": r.get("symbol", symbol),
         "period": r.get("period", ""),
+        "forecasts": r.get("forecasts", {}),
+        "current_price": _current_price,
     }
 
     # Pre-run summary button
     if st.button("🔍 Generate Research Summary", key="gen_summary"):
         with st.spinner("Agent analysing results…"):
             agent = create_research_agent(agent_context)
+            _ticker_q = agent_context["ticker"]
+            _regime_q = agent_context["current_regime"]
+            _has_ml = bool(agent_context.get("forecasts"))
+            _ml_hint = (
+                " ML forecasts are available — call get_ml_forecast_summary()."
+                if _has_ml
+                else " ML forecasts are not available (ML not enabled)."
+            )
             analysis = run_agent_analysis(
                 agent_context,
                 (
-                    "Provide a comprehensive research summary. "
-                    "Use your tools to retrieve strategy metrics and regime context. "
-                    "Compare the strategies against Buy & Hold and highlight the most "
-                    "interesting findings. Include appropriate caveats."
+                    f"Full research brief for {_ticker_q}. "
+                    f"Current detected regime: {_regime_q}."
+                    f"{_ml_hint} "
+                    "Call get_regime_context(), compare_vs_benchmark(), get_risk_analysis(), "
+                    "and get_ml_forecast_summary() in that order. "
+                    "Write the structured brief: SITUATION, ML SIGNAL, STRATEGY EDGE, "
+                    "SIGNAL SCORECARD, WHAT TO WATCH. "
+                    "Use exact numbers from the tools. No generic disclaimers."
                 ),
                 agent=agent,
             )

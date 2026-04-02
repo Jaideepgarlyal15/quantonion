@@ -84,24 +84,21 @@ The `re_act` plugin enables multi-step reasoning:
 
 Graceful fallback to deterministic summaries when API key is absent.
 
-### Sentiment Analysis
-| Tool | Source | Auth |
-|------|--------|------|
-| `get_news_sentiment(ticker)` | Alpha Vantage NEWS_SENTIMENT + Yahoo Finance headlines | Optional AV key |
-| `get_social_buzz(ticker)` | StockTwits public stream + Reddit (WSB, stocks, investing) | None |
-| `get_fear_and_greed_index()` | VIX via yfinance + alternative.me crypto F&G | None |
-| `get_research_brief(ticker)` | All of the above + quant analysis synthesised | Optional AV key |
+### Standalone Agent Tools (`agents/live_tools.py`)
 
-The `get_research_brief` tool produces a multi-section report covering:
-- HMM regime context
-- Strategy performance summary
-- News and social sentiment
-- Fear & greed gauges
-- A signal scorecard (bull / bear / neutral evidence)
-- A decision framework checklist
-- Full disclaimers
+Seven tools the ConnectOnion agent calls to fetch live data:
 
-It is designed to equip users to make their own decisions — not to recommend positions.
+| Tool | What it does | Auth |
+|------|-------------|------|
+| `list_available_strategies()` | Lists all 6 built-in strategies | None |
+| `detect_current_regime(ticker, ...)` | Fetches live prices, runs Gaussian HMM, returns regime + confidence | None |
+| `run_backtest_analysis(ticker, strategy, ...)` | Fetches live data, runs full backtest, returns CAGR/Sharpe/MaxDD/win rate | None |
+| `compare_all_strategies(ticker, ...)` | Runs all 6 strategies, returns table sorted by Sharpe | None |
+| `get_risk_metrics(ticker, ...)` | Returns VaR 95/99, Expected Shortfall, annualised vol | None |
+| `get_ml_forecast(ticker, ...)` | Trains LR + RF ensemble, returns 3-day/2-week/3-month forecasts with 95% CI | None |
+| `get_market_sentiment(ticker)` | VIX via yfinance, crypto Fear & Greed (alternative.me), Yahoo Finance headline sentiment | None |
+
+All tools use free public data sources — no API key required for any of them.
 
 ### Data Sources
 | Source | Free? | Key Required |
@@ -230,12 +227,13 @@ quantonion/
        ┌─────────────┐  ┌─────────────────────────┐
        │  Strategy   │  │  ConnectOnion Agent      │
        │  Library    │  │                          │
-       │  (6 strats) │  │  Agent(re_act plugin)    │
-       │             │  │  Tools: strategy_summary │
-       │             │  │        regime_context    │
-       │             │  │        compare_benchmark │
-       │             │  │        risk_analysis     │
-       └─────────────┘  └─────────────────────────┘
+       │  (6 strats) │  │  Agent(re_act plugin)     │
+       │             │  │  Tools: strategy_summary  │
+       │             │  │        regime_context     │
+       │             │  │        compare_benchmark  │
+       │             │  │        risk_analysis      │
+       │             │  │        ml_forecast_summary│
+       └─────────────┘  └──────────────────────────┘
 ```
 
 ---
