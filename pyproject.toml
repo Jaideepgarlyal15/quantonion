@@ -40,9 +40,9 @@ dev = ["pytest>=7.0", "pytest-cov"]
 dashboard = ["streamlit>=1.35.0", "plotly>=5.18.0"]
 
 [project.urls]
-Homepage = "https://github.com/yourusername/quantonion"
-Repository = "https://github.com/yourusername/quantonion"
-Issues = "https://github.com/yourusername/quantonion/issues"
+Homepage = "https://github.com/Jaideepgarlyal15/quantonion"
+Repository = "https://github.com/Jaideepgarlyal15/quantonion"
+Issues = "https://github.com/Jaideepgarlyal15/quantonion/issues"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

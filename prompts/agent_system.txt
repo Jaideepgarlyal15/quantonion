@@ -35,7 +35,7 @@ TOOLS:
     Returns VIX level and interpretation, crypto Fear & Greed index,
     and Yahoo Finance news headline sentiment (keyword-scored).
 
-  get_macro_context(ticker)
+  get_macro_context()
     Fetches US Treasury yield curve (2-year and 10-year yields, spread),
     US Dollar Index (DXY) level and 5-day trend, and 3-month T-bill as a
     Fed rate proxy. Returns curve interpretation (steep / flat / inverted)

@@ -47,7 +47,7 @@ No paid APIs. No authentication required. Free market data via Yahoo Finance.
 
 ## Tools
 
-The agent has 7 tools, each callable independently or as part of a full brief:
+The agent has 8 tools, each callable independently or as part of a full brief:
 
 | Tool | What it does |
 |---|---|
@@ -125,7 +125,7 @@ You cannot execute on the same bar you generate a signal from. A signal generate
 ```
 agent.py                    ← ConnectOnion entrypoint (Agent + host)
 prompts/agent_system.txt    ← System prompt with routing rules
-agents/live_tools.py        ← 7 tool functions (the agent's hands)
+agents/live_tools.py        ← 8 tool functions (the agent's hands)
 core/
   data_loader.py            ← yfinance price fetch + symbol normalisation
   features.py               ← log returns, rolling vol, momentum, RSI-proxy
